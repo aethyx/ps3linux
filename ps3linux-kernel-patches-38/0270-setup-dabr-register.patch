@@ -1,0 +1,98 @@
+diff --git a/arch/powerpc/include/asm/ps3.h b/arch/powerpc/include/asm/ps3.h
+index 1987c60..3c115da 100644
+--- a/arch/powerpc/include/asm/ps3.h
++++ b/arch/powerpc/include/asm/ps3.h
+@@ -506,4 +506,8 @@ int ps3_set_signal(u64 rtas_signal_group, u8 signal_bit, u16 sub_unit,
+ u32 ps3_get_hw_thread_id(int cpu);
+ u64 ps3_get_spe_id(void *arg);
+ 
++/* kernel debug routines */
++
++int ps3_debug_setup_dabr(u64 address, unsigned int dabr_flags,
++	unsigned int dabrx);
+ #endif
+diff --git a/arch/powerpc/kernel/process.c b/arch/powerpc/kernel/process.c
+index ba48233..cc81ecf 100644
+--- a/arch/powerpc/kernel/process.c
++++ b/arch/powerpc/kernel/process.c
+@@ -276,6 +276,9 @@ void do_dabr(struct pt_regs *regs, unsigned long address,
+ {
+ 	siginfo_t info;
+ 
++	printk("%s:%d: address %016lxh, code %08lxh\n",
++		__func__, __LINE__, address, error_code);
++
+ 	current->thread.trap_nr = TRAP_HWBKPT;
+ 	if (notify_die(DIE_DABR_MATCH, "dabr_match", regs, error_code,
+ 			11, SIGSEGV) == NOTIFY_STOP)
+@@ -287,6 +290,13 @@ void do_dabr(struct pt_regs *regs, unsigned long address,
+ 	/* Clear the DABR */
+ 	set_dabr(0, 0);
+ 
++	if (!user_mode(regs)) {
++		show_regs(regs);
++		printk("%s:%d: done: address %016lxh\n", __func__, __LINE__,
++		address);
++		return;
++	}
++
+ 	/* Deliver the signal to userspace */
+ 	info.si_signo = SIGTRAP;
+ 	info.si_errno = 0;
+diff --git a/arch/powerpc/mm/fault.c b/arch/powerpc/mm/fault.c
+index 0a6b283..8ce57fa8 100644
+--- a/arch/powerpc/mm/fault.c
++++ b/arch/powerpc/mm/fault.c
+@@ -246,7 +246,8 @@ int __kprobes do_page_fault(struct pt_regs *regs, unsigned long address,
+ 		return 0;
+ 
+ 	/* On a kernel SLB miss we can only check for a valid exception entry */
+-	if (!user_mode(regs) && (address >= TASK_SIZE))
++	if (!user_mode(regs) && (address >= TASK_SIZE)
++		&& !(error_code & DSISR_DABRMATCH))
+ 		return SIGSEGV;
+ 
+ #if !(defined(CONFIG_4xx) || defined(CONFIG_BOOKE) || \
+diff --git a/arch/powerpc/platforms/ps3/setup.c b/arch/powerpc/platforms/ps3/setup.c
+index 3f509f8..9e917a7 100644
+--- a/arch/powerpc/platforms/ps3/setup.c
++++ b/arch/powerpc/platforms/ps3/setup.c
+@@ -195,6 +195,38 @@ static int ps3_set_dabr(unsigned long dabr, unsigned long dabrx)
+ 	return lv1_set_dabr(dabr, dabrx) ? -1 : 0;
+ }
+ 
++/**
++ * ps3_debug_setup_dabr - Setup the DABR for kernel use.
++ * @dabr_flags: DABR_DATA_WRITE, DABR_DATA_READ, DABR_TRANSLATION
++ * @dabrx: DABRX_BTI, DABRX_KERNEL, DABRX_USER
++ */
++
++int ps3_debug_setup_dabr(u64 address, unsigned int dabr_flags,
++	unsigned int dabrx)
++{
++	int result;
++	u64 reg;
++
++	BUG_ON(dabr_flags
++		& ~(DABR_DATA_WRITE | DABR_DATA_READ | DABR_TRANSLATION));
++
++	/* PS3 seems to need DABR_TRANSLATION set to work */
++
++	reg = (address & -8L) | dabr_flags | DABR_TRANSLATION;
++
++	printk("%s: address %016llxh, flags %xh = %016llxh\n", __func__,
++		address, dabr_flags, reg);
++
++	result = ps3_set_dabr(reg, dabrx);
++
++	if (result)
++		printk("%s: failed: %d %s\n", __func__, result,
++			ps3_result(result));
++
++	return result;
++}
++EXPORT_SYMBOL_GPL(ps3_debug_setup_dabr);
++
+ static void __init ps3_setup_arch(void)
+ {
+ 	u64 tmp;

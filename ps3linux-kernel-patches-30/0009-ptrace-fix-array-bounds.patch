@@ -1,0 +1,11 @@
+--- a/arch/powerpc/kernel/Makefile	2011-05-19 06:06:34.000000000 +0200
++++ b/arch/powerpc/kernel/Makefile	2012-06-07 10:22:17.100461337 +0200
+@@ -2,7 +2,7 @@
+ # Makefile for the linux kernel.
+ #
+ 
+-CFLAGS_ptrace.o		+= -DUTS_MACHINE='"$(UTS_MACHINE)"'
++CFLAGS_ptrace.o		+= -DUTS_MACHINE='"$(UTS_MACHINE)"' -Wno-array-bounds
+ 
+ subdir-ccflags-$(CONFIG_PPC_WERROR) := -Werror
+ 

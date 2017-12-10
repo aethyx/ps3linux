@@ -1,0 +1,13 @@
+--- a/arch/powerpc/platforms/cell/spufs/syscalls.c	2012-03-01 01:32:49.000000000 +0100
++++ b/arch/powerpc/platforms/cell/spufs/syscalls.c	2012-03-03 10:43:11.147009217 +0100
+@@ -70,8 +70,8 @@
+ 	ret = PTR_ERR(dentry);
+ 	if (!IS_ERR(dentry)) {
+ 		ret = spufs_create(&path, dentry, flags, mode, neighbor);
+-		mutex_unlock(&path.dentry->d_inode->i_mutex);
+-		dput(dentry);
++		if (ret < 0)
++			dput(dentry);
+ 		path_put(&path);
+ 	}
+ 

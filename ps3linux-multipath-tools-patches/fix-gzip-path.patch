@@ -1,0 +1,13 @@
+diff --git a/Makefile.inc b/Makefile.inc
+index b0c68f4..92d2289 100644
+--- a/Makefile.inc
++++ b/Makefile.inc
+@@ -35,7 +35,7 @@ libdir	    = $(prefix)/$(LIB)/multipath
+ unitdir     = $(prefix)/lib/systemd/system
+ mpathpersistdir = $(TOPDIR)/libmpathpersist
+ 
+-GZIP        = /bin/gzip -9 -c
++GZIP        = gzip -9 -c
+ INSTALL_PROGRAM = install
+ 
+ ifndef RPM_OPT_FLAGS

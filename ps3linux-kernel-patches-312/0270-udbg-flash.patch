@@ -1,0 +1,202 @@
+--- a/arch/powerpc/include/asm/udbg.h	2014-05-27 13:19:24.058090088 +0200
++++ b/arch/powerpc/include/asm/udbg.h	2014-05-27 13:26:27.684781399 +0200
+@@ -57,6 +57,7 @@
+ extern void __init udbg_init_ehv_bc(void);
+ extern void __init udbg_init_ps3gelic(void);
+ extern void __init udbg_init_ps3_lv1_cons(void);
++extern void __init udbg_init_ps3flash(void);
+ extern void __init udbg_init_debug_opal_raw(void);
+ extern void __init udbg_init_debug_opal_hvsi(void);
+ 
+--- a/arch/powerpc/kernel/udbg.c	2014-05-27 13:17:29.578083428 +0200
++++ b/arch/powerpc/kernel/udbg.c	2014-05-27 13:26:06.854780189 +0200
+@@ -73,6 +73,8 @@
+ 	udbg_init_ps3gelic();
+ #elif defined(CONFIG_PPC_EARLY_DEBUG_PS3_LV1_CONS)
+ 	udbg_init_ps3_lv1_cons();
++#elif defined(CONFIG_PPC_EARLY_DEBUG_PS3_FLASH)
++	udbg_init_ps3flash();
+ #elif defined(CONFIG_PPC_EARLY_DEBUG_OPAL_RAW)
+ 	udbg_init_debug_opal_raw();
+ #elif defined(CONFIG_PPC_EARLY_DEBUG_OPAL_HVSI)
+--- a/arch/powerpc/Kconfig.debug	2014-05-27 13:20:41.934761285 +0200
++++ b/arch/powerpc/Kconfig.debug	2014-05-27 13:25:52.014779325 +0200
+@@ -256,6 +256,14 @@
+ 	  Select this to enable early debugging for the PlayStation3 via
+ 	  LV1 debug console.
+ 
++config PPC_EARLY_DEBUG_PS3_FLASH
++	bool "Early debugging through the PS3 flash"
++	depends on PPC_PS3
++	select PS3_FLASH_UDBG
++	help
++	  Select this to enable early debugging for the PlayStation3 via
++	  flash.
++
+ config PPC_EARLY_DEBUG_OPAL_RAW
+ 	bool "OPAL raw console"
+ 	depends on HVC_OPAL
+--- a/arch/powerpc/platforms/ps3/Kconfig	2014-05-27 13:24:06.438106516 +0200
++++ b/arch/powerpc/platforms/ps3/Kconfig	2014-05-27 13:24:48.914775654 +0200
+@@ -254,4 +254,12 @@
+ 
+ 	  If in doubt, say N here.
+ 
++config PS3_FLASH_UDBG
++	bool "PS3 udbg output via flash"
++	depends on PPC_PS3
++	help
++	  Enables udbg early debugging output to flash.
++
++	  If in doubt, say N here.
++
+ endmenu
+--- a/arch/powerpc/platforms/ps3/Makefile	2014-05-27 13:25:01.648109728 +0200
++++ b/arch/powerpc/platforms/ps3/Makefile	2014-05-27 13:25:17.994777346 +0200
+@@ -4,6 +4,7 @@
+ 
+ obj-$(CONFIG_PS3GELIC_UDBG) += gelic_udbg.o
+ obj-$(CONFIG_PS3_LV1_CONS_UDBG) += lv1_cons_udbg.o
++obj-$(CONFIG_PS3_FLASH_UDBG) += flash_udbg.o
+ obj-$(CONFIG_SMP) += smp.o
+ obj-$(CONFIG_SPU_BASE) += spu.o
+ obj-y += device-init.o
+--- a/arch/powerpc/platforms/ps3/system-bus.c	2014-05-27 14:05:33.998251236 +0200
++++ b/arch/powerpc/platforms/ps3/system-bus.c	2014-05-27 14:09:54.961599751 +0200
+@@ -73,6 +73,13 @@
+ 		}
+ 	}
+ 
++#ifdef CONFIG_PS3_FLASH_UDBG
++	if (ps3_is_device(dev, 4, 4)) {
++		result = 0;
++		goto done;
++	}
++#endif
++
+ 	result = lv1_open_device(dev->bus_id, dev->dev_id, 0);
+ 
+ 	if (result) {
+@@ -109,6 +116,13 @@
+ 		}
+ 	}
+ 
++#ifdef CONFIG_PS3_FLASH_UDBG
++	if (ps3_is_device(dev, 4, 4)) {
++		result = 0;
++		goto done;
++	}
++#endif
++
+ 	result = lv1_close_device(dev->bus_id, dev->dev_id);
+ 	BUG_ON(result);
+ 
+--- /dev/null	2014-05-27 10:02:22.934069036 +0200
++++ b/arch/powerpc/platforms/ps3/flash_udbg.c	2014-05-27 13:45:43.434848638 +0200
+@@ -0,0 +1,106 @@
++/*
++ * PS3 Flash Debug Output
++ *
++ * Copyright (C) 2014 glevand <geoffrey.levand@mail.ru>
++ * All rights reserved.
++ *
++ * This program is free software; you can redistribute it and/or modify it
++ * under the terms of the GNU General Public License as published
++ * by the Free Software Foundation; version 2 of the License.
++ *
++ * This program is distributed in the hope that it will be useful, but
++ * WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
++ * General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License along
++ * with this program; if not, write to the Free Software Foundation, Inc.,
++ * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
++ */
++
++#include <asm/io.h>
++#include <asm/udbg.h>
++#include <asm/lv1call.h>
++#include <asm/ps3.h>
++
++/* /dev/ps3flashg  */
++#define BUS_ID	4
++#define DEV_ID	4
++#define RGN_ID	6
++
++#define SECTOR_LENGTH	512
++#define MAX_SECTORS	32
++
++static int initialized = 0;
++static u64 dmabase;
++
++static char buffer[SECTOR_LENGTH] __attribute__ ((aligned(4096)));
++static int buffer_pos = 0;
++static u64 start_sector = 0;
++
++static u64 write_tag, flush_tag;
++
++static void ps3flash_udbg_putc(char ch)
++{
++	int ret;
++
++	if (!initialized) {
++		lv1_open_device(BUS_ID, DEV_ID, 0);
++
++		ret = lv1_allocate_device_dma_region(BUS_ID, DEV_ID,
++			0x08000000ul, 24, 0, &dmabase);
++		if (ret != 0)
++			return;
++
++		ret = lv1_map_device_dma_region(BUS_ID, DEV_ID, 0, dmabase,
++			0x08000000ul, 0xf800000000000000ull);
++		if (ret != 0)
++			return;
++
++		initialized = 1;
++	}
++
++	if (buffer_pos == 0)
++		memset(buffer, 0, sizeof(buffer));
++
++	buffer[buffer_pos++] = ch;
++
++	if (ch == '\n' || ch == '\r' || buffer_pos >= sizeof(buffer)) {
++		/* write to storage */
++
++		u64 status;
++		int timeout;
++
++		ret = lv1_storage_write(DEV_ID, RGN_ID, start_sector, sizeof(buffer) / SECTOR_LENGTH,
++			0x2, ps3_mm_phys_to_lpar(__pa(buffer)), &write_tag);
++
++		if (ret == 0) {
++			lv1_storage_send_device_command(DEV_ID, 0x31, 0, 0, 0, 0, &flush_tag);
++
++			timeout = 100000;
++			while (1) {
++				if (timeout <= 0)
++					break;
++
++				ret = lv1_storage_check_async_status(DEV_ID, write_tag, &status);
++				if (ret == 0 && status == 0)
++					break;
++
++				timeout--;
++			}
++		}
++	}
++
++	if (buffer_pos >= sizeof(buffer)) {
++		buffer_pos = 0;
++
++		start_sector += (sizeof(buffer) / SECTOR_LENGTH);
++		if (start_sector + (sizeof(buffer) / SECTOR_LENGTH) > MAX_SECTORS)
++			start_sector = 0;
++	}
++}
++
++void __init udbg_init_ps3flash(void)
++{
++	udbg_putc = ps3flash_udbg_putc;
++}

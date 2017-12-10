@@ -1,0 +1,11 @@
+--- a/arch/powerpc/mm/Makefile	2013-07-13 08:18:54.344359205 +0200
++++ b/arch/powerpc/mm/Makefile	2013-07-13 08:20:34.711031710 +0200
+@@ -8,6 +8,8 @@
+ EXTRA_CFLAGS	+= -mno-minimal-toc
+ endif
+ 
++CFLAGS_hugetlbpage.o		+= -Wno-array-bounds
++
+ obj-y				:= fault.o mem.o pgtable.o gup.o \
+ 				   init_$(CONFIG_WORD_SIZE).o \
+ 				   pgtable_$(CONFIG_WORD_SIZE).o

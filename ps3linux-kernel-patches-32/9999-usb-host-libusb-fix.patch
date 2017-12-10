@@ -1,0 +1,246 @@
+Index: usb-3.2/drivers/usb/host/ehci-hcd.c
+===================================================================
+--- usb-3.2.orig/drivers/usb/host/ehci-hcd.c
++++ usb-3.2/drivers/usb/host/ehci-hcd.c
+@@ -361,6 +361,9 @@ static void ehci_quiesce (struct ehci_hc
+ 		BUG ();
+ #endif
+ 
++	ehci->periodic_timer_event = 0;
++	hrtimer_try_to_cancel(&ehci->hrtimer);
++
+ 	/* wait for any schedule enables/disables to take effect */
+ 	temp = ehci_readl(ehci, &ehci->regs->command) << 10;
+ 	temp &= STS_ASS | STS_PSS;
+@@ -494,6 +497,9 @@ static void ehci_shutdown(struct usb_hcd
+ {
+ 	struct ehci_hcd	*ehci = hcd_to_ehci(hcd);
+ 
++	ehci->periodic_timer_event = 0;
++	hrtimer_cancel(&ehci->hrtimer);
++
+ 	del_timer_sync(&ehci->watchdog);
+ 	del_timer_sync(&ehci->iaa_watchdog);
+ 
+@@ -562,6 +568,9 @@ static void ehci_stop (struct usb_hcd *h
+ 	ehci_dbg (ehci, "stop\n");
+ 
+ 	/* no more interrupts ... */
++	ehci->periodic_timer_event = 0;
++	hrtimer_cancel(&ehci->hrtimer);
++
+ 	del_timer_sync (&ehci->watchdog);
+ 	del_timer_sync(&ehci->iaa_watchdog);
+ 
+@@ -621,6 +630,9 @@ static int ehci_init(struct usb_hcd *hcd
+ 	ehci->iaa_watchdog.function = ehci_iaa_watchdog;
+ 	ehci->iaa_watchdog.data = (unsigned long) ehci;
+ 
++	hrtimer_init(&ehci->hrtimer, CLOCK_MONOTONIC, HRTIMER_MODE_ABS);
++	ehci->hrtimer.function = ehci_hrtimer_func;
++
+ 	hcc_params = ehci_readl(ehci, &ehci->caps->hcc_params);
+ 
+ 	/*
+@@ -952,6 +964,8 @@ static irqreturn_t ehci_irq (struct usb_
+ 		dbg_status(ehci, "fatal", status);
+ 		ehci_halt(ehci);
+ dead:
++		ehci->periodic_timer_event = 0;
++		hrtimer_try_to_cancel(&ehci->hrtimer);
+ 		ehci_reset(ehci);
+ 		ehci_writel(ehci, 0, &ehci->regs->configured_flag);
+ 		usb_hc_died(hcd);
+Index: usb-3.2/drivers/usb/host/ehci-hub.c
+===================================================================
+--- usb-3.2.orig/drivers/usb/host/ehci-hub.c
++++ usb-3.2/drivers/usb/host/ehci-hub.c
+@@ -316,6 +316,9 @@ static int ehci_bus_suspend (struct usb_
+ 	if (ehci->reclaim)
+ 		end_unlink_async(ehci);
+ 
++	ehci->periodic_timer_event = 0;
++	hrtimer_try_to_cancel(&ehci->hrtimer);
++
+ 	/* allow remote wakeup */
+ 	mask = INTR_MASK;
+ 	if (!hcd->self.root_hub->do_remote_wakeup)
+Index: usb-3.2/drivers/usb/host/ehci-sched.c
+===================================================================
+--- usb-3.2.orig/drivers/usb/host/ehci-sched.c
++++ usb-3.2/drivers/usb/host/ehci-sched.c
+@@ -479,27 +479,103 @@ static int tt_no_collision (
+ 
+ /*-------------------------------------------------------------------------*/
+ 
+-static int enable_periodic (struct ehci_hcd *ehci)
++static void send_command(struct ehci_hcd *ehci, u32 bit, int set)
+ {
+-	u32	cmd;
+-	int	status;
++	ehci->command = ehci_readl(ehci, &ehci->regs->command);
++	if (set)
++		ehci->command |= bit;
++	else
++		ehci->command &= ~bit;
++	ehci_writel(ehci, ehci->command, &ehci->regs->command);
++	ehci_readl(ehci, &ehci->regs->command);
++ehci_info(ehci, "send command PSE %d\n", set);
++}
+ 
+-	if (ehci->periodic_sched++)
+-		return 0;
++#define	EHCI_HRTIMER_PERIODIC_DISABLE	1
++#define	EHCI_HRTIMER_PERIODIC_POLL	2
++
++static unsigned hrtimer_delays_ns[] = {
++	0,			/* dummy */
++	10 * NSEC_PER_MSEC,	/* wait before disabling periodic schedule */
++	1 * NSEC_PER_MSEC,	/* see if periodic schedule has stopped yet */
++};
++
++static void start_periodic_hrtimer(struct ehci_hcd *ehci, int event)
++{
++	unsigned	delay_ns;
++
++ehci_info(ehci, "start hrtimer %d\n", event);
++	ehci->periodic_timer_event = event;
++	delay_ns = hrtimer_delays_ns[event];
++	ehci->periodic_timeout = ktime_add(ktime_get(), ktime_set(0, delay_ns));
++	hrtimer_start_range_ns(&ehci->hrtimer, ehci->periodic_timeout,
++			125 * NSEC_PER_USEC, HRTIMER_MODE_ABS);
++}
++
++/* Wait until the periodic schedule stops, then restart it */
++static void poll_periodic_stop(struct ehci_hcd *ehci, ktime_t *now)
++{
++	u32	status;
+ 
+-	/* did clearing PSE did take effect yet?
+-	 * takes effect only at frame boundaries...
+-	 */
+-	status = handshake_on_error_set_halt(ehci, &ehci->regs->status,
+-					     STS_PSS, 0, 9 * 125);
+-	if (status) {
+-		usb_hc_died(ehci_to_hcd(ehci));
+-		return status;
++	status = ehci_readl(ehci, &ehci->regs->status);
++	if (unlikely(now && (status & STS_PSS))) {
++		if (ktime_us_delta(*now, ehci->periodic_disable_time)
++				> 20 * USEC_PER_MSEC) {
++			ehci_err(ehci, "Waited 20 ms for the periodic schedule to stop, giving up\n");
++			status = 0;
++		}
++	}
++	if (!(status & STS_PSS)) {
++		send_command(ehci, CMD_PSE, 1);
++		ehci->periodic_timer_event = 0;
++	} else if (!now) {
++		start_periodic_hrtimer(ehci, EHCI_HRTIMER_PERIODIC_POLL);
+ 	}
++}
++
++static enum hrtimer_restart ehci_hrtimer_func(struct hrtimer *t)
++{
++	struct ehci_hcd	*ehci = container_of(t, struct ehci_hcd, hrtimer);
++	ktime_t		now = ktime_get();
+ 
+-	cmd = ehci_readl(ehci, &ehci->regs->command) | CMD_PSE;
+-	ehci_writel(ehci, cmd, &ehci->regs->command);
+-	/* posted write ... PSS happens later */
++ehci_info(ehci, "hrtimer func: event %d\n", ehci->periodic_timer_event);
++	if (ehci->periodic_timer_event == EHCI_HRTIMER_PERIODIC_DISABLE) {
++
++		/* Wait until time to disable the periodic schedule */
++		if (now.tv64 >= ehci->periodic_timeout.tv64) {
++			send_command(ehci, CMD_PSE, 0);
++			ehci->periodic_disable_time = ktime_get();
++			free_cached_lists(ehci);
++			ehci->periodic_timer_event = 0;
++		}
++
++	} else if (ehci->periodic_timer_event == EHCI_HRTIMER_PERIODIC_POLL) {
++		if (now.tv64 >= ehci->periodic_timeout.tv64)
++			poll_periodic_stop(ehci, &now);
++	}
++
++	if (ehci->periodic_timer_event) {
++		unsigned	delay_ns;
++
++		delay_ns = hrtimer_delays_ns[ehci->periodic_timer_event];
++		hrtimer_forward_now(&ehci->hrtimer, ktime_set(0, delay_ns));
++		return HRTIMER_RESTART;
++	}
++	return HRTIMER_NORESTART;
++}
++
++static int enable_periodic (struct ehci_hcd *ehci)
++{
++	if (ehci->periodic_sched++)
++		return 0;
++
++	/* If we're still waiting to stop the periodic schedule, do nothing */
++	if (ehci->periodic_timer_event == EHCI_HRTIMER_PERIODIC_DISABLE)
++		ehci->periodic_timer_event = 0;
++
++	/* Otherwise, don't start until PSS is known to be 0 */
++	else
++		poll_periodic_stop(ehci, NULL);
+ 
+ 	/* make sure ehci_work scans these */
+ 	ehci->next_uframe = ehci_read_frame_index(ehci)
+@@ -511,9 +587,6 @@ static int enable_periodic (struct ehci_
+ 
+ static int disable_periodic (struct ehci_hcd *ehci)
+ {
+-	u32	cmd;
+-	int	status;
+-
+ 	if (--ehci->periodic_sched)
+ 		return 0;
+ 
+@@ -527,21 +600,13 @@ static int disable_periodic (struct ehci
+ 			udelay(delay);
+ 	}
+ 
+-	/* did setting PSE not take effect yet?
+-	 * takes effect only at frame boundaries...
+-	 */
+-	status = handshake_on_error_set_halt(ehci, &ehci->regs->status,
+-					     STS_PSS, STS_PSS, 9 * 125);
+-	if (status) {
+-		usb_hc_died(ehci_to_hcd(ehci));
+-		return status;
+-	}
+-
+-	cmd = ehci_readl(ehci, &ehci->regs->command) & ~CMD_PSE;
+-	ehci_writel(ehci, cmd, &ehci->regs->command);
+-	/* posted write ... */
+-
+-	free_cached_lists(ehci);
++	/* If we're still waiting to start the periodic schedule, do nothing */
++	if (ehci->periodic_timer_event == EHCI_HRTIMER_PERIODIC_POLL)
++		ehci->periodic_timer_event = 0;
++
++	/* Otherwise wait for a while */
++	else
++		start_periodic_hrtimer(ehci, EHCI_HRTIMER_PERIODIC_DISABLE);
+ 
+ 	ehci->next_uframe = -1;
+ 	return 0;
+Index: usb-3.2/drivers/usb/host/ehci.h
+===================================================================
+--- usb-3.2.orig/drivers/usb/host/ehci.h
++++ usb-3.2/drivers/usb/host/ehci.h
+@@ -69,6 +69,11 @@ enum ehci_rh_state {
+ };
+ 
+ struct ehci_hcd {			/* one per controller */
++	ktime_t			periodic_timeout;
++	ktime_t			periodic_disable_time;
++	struct hrtimer		hrtimer;
++	int			periodic_timer_event;
++
+ 	/* glue to PCI and HCD framework */
+ 	struct ehci_caps __iomem *caps;
+ 	struct ehci_regs __iomem *regs;

@@ -1,0 +1,168 @@
+
+BusyBox 1.21.0
+---------------
+
+http://busybox.net/downloads/busybox-1.21.0.tar.bz2
+
+tar xvjf busybox-1.21.0.tar.bz2
+cd busybox-1.21.0
+make menuconfig
+make
+ls -l busybox
+
+Initramfs
+----------
+
+KERNEL_VERSION=3.10.14
+
+mkdir initramfs
+cd initramfs
+mkdir -p bin dev etc lib/modules/$KERNEL_VERSION mnt proc sbin sys usr/bin usr/sbin
+
+cp ~/busybox-1.21.0/busybox bin/
+cd bin
+ln -sf busybox sh
+cd ..
+
+cp mdev.conf etc/
+cp modules etc/
+
+# set MODE in init script
+
+cp init .
+
+MOD_LIST="fat vfat isofs crc-ccitt crc-itu-t lzo_compress udf squashfs overlayfs
+	 ps3_gelic ps3stor_lib sg ps3rom usb-common usbcore ehci-hcd ohci-hcd usb-storage"
+
+for mod in $MOD_LIST; do
+	path=`find  /home/glevand/linux-$KERNEL_VERSION-build/lib/modules/$KERNEL_VERSION -name $mod.ko`
+	if [ -z "$path" ]; then
+		echo "error: module $mod.ko was not found"
+	fi
+	cp -v $path lib/modules/$KERNEL_VERSION/
+done
+
+# creating initramfs image
+
+find . | cpio -H newc -o > ../initramfs.cpio
+cd ..
+cat initramfs.cpio | gzip > initramfs.cpio.gz
+
+# extracting initramfs image
+
+gunzip initramfs.cpio.gz
+mkdir initramfs
+cd initramfs
+cpio -i -d -H newc --no-absolute-filenames < ../initramfs.cpio
+
+debootstrap
+------------
+
+apt-get install debootstrap
+ 
+mkdir livecd
+ 
+debootstrap --arch powerpc wheezy /root/livecd http://ftp.us.debian.org/debian
+ 
+# Enter chroot environment
+ 
+mount -t proc none /root/livecd/proc
+mount --rbind /dev /root/livecd/dev
+LANG=C chroot /root/livecd /bin/bash
+ 
+export TERM=xterm-color
+ 
+echo "debian" > /etc/hostname
+ 
+dpkg-reconfigure tzdata
+ 
+# Configure network interfaces
+ 
+cat /etc/network/interfaces
+---
+auto lo
+iface lo inet loopback
+ 
+allow-hotplug eth0
+iface eth0 inet dhcp
+ 
+allow-hotplug wlan0
+iface wlan0 inet dhcp
+    wpa-ssid ssid
+    wpa-psk psk
+-EOF-
+	 
+# Configure APT
+	 
+cat /etc/apt/sources.list
+---
+deb http://ftp.us.debian.org/debian wheezy main
+deb-src http://ftp.us.debian.org/debian wheezy main
+	 
+deb http://security.debian.org wheezy/updates main
+deb-src http://security.debian.org wheezy/updates main
+-EOF-
+	 
+aptitude update
+	 
+aptitude install locales
+dpkg-reconfigure locales
+aptitude install console-data
+dpkg-reconfigure console-data
+	 
+tasksel install standard
+aptitude install debootstrap ufsutils
+aptitude install binutils gcc make autoconf git vim openssh-server sudo
+aptitude install wireless-tools wpasupplicant libssl-dev libncurses5-dev
+aptitude install gcc-spu g++-spu newlib-spu spu-tools
+aptitude install kpartx cryptsetup libreadline-dev libaio-dev libdevmapper-dev libudev-dev
+aptitude install elinks lynx irssi tcpdump
+	 
+# Make SSH server start at boot so we could ssh to our LiveCD
+	 
+update-rc.d ssh defaults
+	 
+aptitude clean
+
+passwd
+adduser glevand
+passwd glevand
+	 
+rm -f /etc/udev/rules.d/70-persistent-net.rules
+
+# exit chroot environment
+
+exit
+
+rm -f /root/livecd/root/.bash_history
+
+# umount dev and proc
+
+umount /root/livecd/dev/pts
+umount /root/livecd/dev/shm
+umount /root/livecd/dev
+umount /root/livecd/proc
+
+rootfs
+-------
+
+cd livecd
+mksquashfs * ../root.sfs
+
+unsquashfs root.sfs
+cd squashfs-root
+mksquashfs * ../root-changed.sfs
+
+Burning CD
+-----------
+
+mkdir -p iso/debianlive
+cp root.sfs initramfs.cpio.gz vmlinux-$KERNEL_VERSION iso/debianlive
+echo "debianlive=/debianlive/vmlinux-$KERNEL_VERSION initrd=/debianlive/initramfs.cpio.gz" > iso/kboot.conf
+cd iso
+mkisofs -R -J -l -o ../debianlive.iso .
+cd ..
+ 
+sudo cdrecord -v dev=/dev/sr0 blank=fast
+sudo cdrecord -v dev=/dev/sr0 debianlive.iso
+

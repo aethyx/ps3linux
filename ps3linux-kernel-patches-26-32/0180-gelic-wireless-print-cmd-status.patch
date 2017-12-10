@@ -1,0 +1,11 @@
+--- a/drivers/net/ps3_gelic_wireless.c	2011-08-03 21:43:28.000000000 +0200
++++ b/drivers/net/ps3_gelic_wireless.c	2012-06-07 11:35:55.234051712 +0200
+@@ -183,7 +183,7 @@
+ 				      &cmd->tag, &cmd->size);
+ 	if (cmd->status) {
+ 		complete(&cmd->done);
+-		pr_info("%s: cmd issue failed\n", __func__);
++		pr_info("%s: cmd (%d) issue failed (%d)\n", __func__, cmd->cmd, cmd->status);
+ 		return;
+ 	}
+ 

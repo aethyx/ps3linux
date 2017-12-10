@@ -1,0 +1,211 @@
+--- a/drivers/char/Makefile	2012-02-03 21:39:51.000000000 +0100
++++ b/drivers/char/Makefile	2012-02-05 17:51:57.339262786 +0100
+@@ -65,3 +65,5 @@
+ js-rtc-y = rtc.o
+ 
+ obj-$(CONFIG_TILE_SROM)		+= tile-srom.o
++
++obj-$(CONFIG_PS3_PHYSMEM)	+= ps3physmem.o
+--- a/arch/powerpc/platforms/ps3/Kconfig	2012-02-04 21:13:42.539806178 +0100
++++ b/arch/powerpc/platforms/ps3/Kconfig	2012-02-05 17:54:38.698430717 +0100
+@@ -179,6 +179,12 @@
+ 	  profiling support of the Cell processor with programs like
+ 	  oprofile and perfmon2, then say Y or M, otherwise say N.
+ 
++config PS3_PHYSMEM
++	tristate "PS3 Physical Memory Driver"
++	depends on PPC_PS3
++	help
++	  This driver allows you direct access to the PS3 physical memory.
++
+ config PS3GELIC_UDBG
+ 	bool "PS3 udbg output via UDP broadcasts on Ethernet"
+ 	depends on PPC_PS3
+--- /dev/null	2012-02-05 10:06:29.087361680 +0100
++++ b/drivers/char/ps3physmem.c	2012-02-05 17:50:30.897909862 +0100
+@@ -0,0 +1,185 @@
++/*
++ * PS3 Physical Memory Driver
++ *
++ * Copyright (C) 2011 graf_chokolo <grafchokolo@gmail.com>
++ * Copyright (C) 2011, 2012 glevand <geoffrey.levand@mail.ru>
++ * All rights reserved.
++ *
++ * This program is free software; you can redistribute it and/or modify it
++ * under the terms of the GNU General Public License as published
++ * by the Free Software Foundation; version 2 of the License.
++ *
++ * This program is distributed in the hope that it will be useful, but
++ * WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
++ * General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License along
++ * with this program; if not, write to the Free Software Foundation, Inc.,
++ * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
++ */
++
++#include <linux/module.h>
++#include <linux/kernel.h>
++#include <linux/init.h>
++#include <linux/mm.h>
++#include <linux/fs.h>
++#include <linux/uaccess.h>
++#include <linux/miscdevice.h>
++
++#include <asm/io.h>
++#include <asm/ps3.h>
++#include <asm/lv1call.h>
++
++static unsigned long mem_start = 0;
++module_param(mem_start, ulong, 0);
++
++static unsigned long mem_size = 256 * 1024 * 1024;
++module_param(mem_size, ulong, 0);
++
++static unsigned long mem_pagesize = 24;	/* 16MB */
++module_param(mem_pagesize, ulong, 0);
++
++static u64 ps3physmem_lpar;
++static char *ps3physmem_virt;
++
++static ssize_t ps3physmem_read(struct file *file, char __user *usrbuf,
++    size_t count, loff_t *pos)
++{
++	if (*pos + count > mem_size)
++		count = mem_size - *pos;
++
++	if (!count)
++		return (0);
++
++	if (copy_to_user(usrbuf, ps3physmem_virt + *pos, count))
++		return (-EFAULT);
++
++	*pos += count;
++
++	return (count);
++}
++
++static ssize_t ps3physmem_write(struct file *file, const char __user *usrbuf,
++    size_t count, loff_t *pos)
++{
++	if (*pos + count > mem_size)
++		count = mem_size - *pos;
++
++	if (!count)
++		return (0);
++
++	if (copy_from_user(ps3physmem_virt + *pos, usrbuf, count))
++		return (-EFAULT);
++
++	*pos += count;
++
++	return (count);
++}
++
++static void ps3physmem_vma_open(struct vm_area_struct *vma)
++{
++}
++
++static void ps3physmem_vma_close(struct vm_area_struct *vma)
++{
++}
++
++static struct vm_operations_struct ps3physmem_vm_ops = {
++	.open = ps3physmem_vma_open,
++	.close = ps3physmem_vma_close,
++};
++
++static int ps3physmem_mmap(struct file *file, struct vm_area_struct *vma)
++{
++	unsigned long size, pfn;
++	int res;
++
++	size = vma->vm_end - vma->vm_start;
++
++	if (((vma->vm_pgoff << PAGE_SHIFT) + size) > mem_size)
++		return (-EINVAL);
++
++	vma->vm_flags |= VM_RESERVED | VM_IO;
++	vma->vm_page_prot = pgprot_noncached(vma->vm_page_prot);
++
++	pfn = ((unsigned long) ps3physmem_virt >> PAGE_SHIFT) + vma->vm_pgoff;
++
++	res = io_remap_pfn_range(vma, vma->vm_start, pfn, size,
++	    vma->vm_page_prot);
++	if (res)
++		return (res);
++
++	vma->vm_ops = &ps3physmem_vm_ops;
++
++	ps3physmem_vma_open(vma);
++
++	return (0);
++}
++
++static const struct file_operations ps3physmem_fops = {
++	.owner = THIS_MODULE,
++	.read = ps3physmem_read,
++	.write = ps3physmem_write,
++	.mmap = ps3physmem_mmap,
++};
++
++static struct miscdevice ps3physmem_misc = {
++	.minor	= MISC_DYNAMIC_MINOR,
++	.name	= "ps3physmem",
++	.fops	= &ps3physmem_fops,
++};
++
++static int __init ps3physmem_init(void)
++{
++	int res;
++
++	res = lv1_undocumented_function_114(mem_start,
++	    mem_pagesize, mem_size, &ps3physmem_lpar);
++	if (res) {
++		pr_info("%s:%u: lv1_undocumented_function_114 failed %d\n",
++		    __func__, __LINE__, res);
++		return (-ENXIO);
++	}
++
++	ps3physmem_virt = ioremap_nocache(ps3physmem_lpar, mem_size);
++	if (!ps3physmem_virt) {
++		pr_info("%s:%u: ioremap_nocache failed\n", __func__, __LINE__);
++		goto destroy_lpar;
++	}
++
++	res = misc_register(&ps3physmem_misc);
++	if (res) {
++		pr_info("%s:%u: misc_register failed %d\n",
++		    __func__, __LINE__, res);
++		goto unmap_lpar;
++	}
++
++	return (0);
++
++unmap_lpar:
++
++	iounmap((void *) ps3physmem_virt);
++
++destroy_lpar:
++
++	lv1_undocumented_function_115(ps3physmem_lpar);
++
++	return (res);
++}
++
++static void __exit ps3physmem_exit(void)
++{
++	misc_deregister(&ps3physmem_misc);
++
++	iounmap((void *) ps3physmem_virt);
++
++	lv1_undocumented_function_115(ps3physmem_lpar);
++}
++
++module_init(ps3physmem_init);
++module_exit(ps3physmem_exit);
++
++MODULE_AUTHOR("glevand");
++MODULE_DESCRIPTION("PS3 Physical Memory Driver");
++MODULE_LICENSE("GPL");

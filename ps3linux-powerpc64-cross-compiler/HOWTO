@@ -1,0 +1,135 @@
+
+* To build spu toolchain, replace target 'powerpc64-linux' with 'spu-elf'.
+
+binutils-2.20.1
+----------------
+
+http://ftp.gnu.org/gnu/binutils/binutils-2.20.1.tar.bz2
+
+tar xvjf binutils-2.20.1.tar.bz2
+mkdir binutils-build
+cd binutils-build
+../binutils-2.20.1/configure --target=powerpc64-linux --prefix=/opt/powerpc64-linux-gcc-4.4.5 \
+	--disable-werror --disable-nls --enable-64-bit-bfd
+make
+sudo make install
+
+gcc-4.4.5
+----------
+
+ftp://ftp.gnu.org/gnu/gcc/gcc-4.4.5/gcc-4.4.5.tar.bz2
+http://www.mpfr.org/mpfr-current/mpfr-3.1.0.tar.bz2
+ftp://ftp.gmplib.org/pub/gmp-5.0.2/gmp-5.0.2.tar.bz2
+
+tar xvjf mpfr-3.1.0.tar.bz2
+tar xvjf gmp-5.0.2.tar.bz2
+tar xvjf gcc-4.4.5.tar.bz2
+cd gcc-4.4.5
+ln -sf ../mpfr-3.1.0 mpfr
+ln -sf ../gmp-5.0.2 gmp
+cd ..
+mkdir gcc-build
+cd gcc-build
+PATH=/opt/powerpc64-linux-gcc-4.4.5/bin:$PATH ../gcc-4.4.5/configure --target=powerpc64-linux \
+	--prefix=/opt/powerpc64-linux-gcc-4.4.5 --without-headers --enable-languages=c \
+	--with-mpfr --with-gmp \
+	--disable-nls --disable-shared --disable-threads --disable-decimal-float \
+	--disable-libmudflap --disable-libssp --disable-libgomp --disable-libquadmath
+PATH=/opt/powerpc64-linux-gcc-4.4.5/bin:$PATH make
+PATH=/opt/powerpc64-linux-gcc-4.4.5/bin:$PATH sudo make install
+
+binutils-2.22
+--------------
+
+ftp://ftp.gnu.org/gnu/binutils/binutils-2.22.tar.bz2
+
+tar xvjf binutils-2.22.tar.bz2
+mkdir binutils-build
+cd binutils-build
+../binutils-2.22/configure --target=powerpc64-linux --prefix=/opt/powerpc64-linux-gcc-4.6.2 \
+	--disable-werror --disable-nls --enable-64-bit-bfd
+make
+sudo make install
+
+gcc-4.6.2
+----------
+
+http://ftp.gnu.org/gnu/mpfr/mpfr-3.1.0.tar.bz2
+ftp://ftp.gmplib.org/pub/gmp-5.0.2/gmp-5.0.2.tar.bz2
+http://www.multiprecision.org/mpc/download/mpc-0.8.2.tar.gz
+ftp://ftp.gnu.org/gnu/gcc/gcc-4.6.2/gcc-4.6.2.tar.bz2
+
+tar xvjf mpfr-3.1.0.tar.bz2
+tar xvjf gmp-5.0.2.tar.bz2
+tar xvzf mpc-0.8.2.tar.gz
+tar xvjf gcc-4.6.2.tar.bz2
+cd gcc-4.6.2
+sed -i 's/BUILD_INFO=info/BUILD_INFO=/' gcc/configure
+patch -p0 < gcc-4.6-write_field_root-out-of-scope-access-fix.patch
+ln -sf ../mpfr-3.1.0 mpfr
+ln -sf ../gmp-5.0.2 gmp
+ln -sf ../mpc-0.8.2 mpc
+cd ..
+mkdir gcc-build
+cd gcc-build
+PATH=/opt/powerpc64-linux-gcc-4.6.2/bin:$PATH ../gcc-4.6.2/configure --target=powerpc64-linux \
+	--prefix=/opt/powerpc64-linux-gcc-4.6.2 --without-headers --enable-languages=c \
+	--disable-nls --disable-shared --disable-threads --disable-decimal-float \
+	--disable-libmudflap --disable-libssp --disable-libgomp --disable-libquadmath \
+	--with-mpfr-include=$(pwd)/../gcc-4.6.2/mpfr/src --with-mpfr-lib=$(pwd)/mpfr/src/.libs
+PATH=/opt/powerpc64-linux-gcc-4.6.2/bin:$PATH make
+PATH=/opt/powerpc64-linux-gcc-4.6.2/bin:$PATH sudo make install
+
+binutils-2.23.2
+----------------
+
+ftp://ftp.gnu.org/gnu/binutils/binutils-2.23.2.tar.bz2
+
+tar xvjf binutils-2.23.2.tar.bz2
+cd binutils-2.23.2
+sed -i -e 's/\@colophon/\@\@colophon/' -e 's/doc\@cygnus.com/doc\@\@cygnus.com/' bfd/doc/bfd.texinfo
+cd ..
+mkdir binutils-build
+cd binutils-build
+../binutils-2.23.2/configure --target=powerpc64-linux --prefix=/opt/powerpc64-linux-gcc-4.7.3 \
+	--disable-werror --disable-nls --enable-64-bit-bfd
+make
+sudo make install
+
+gcc-4.7.3
+----------
+
+http://gcc.skazkaforyou.com/releases/gcc-4.7.3/gcc-4.7.3.tar.bz2
+
+tar xvjf gcc-4.7.3.tar.bz2
+cd gcc-4.7.3
+sed -i 's/BUILD_INFO=info/BUILD_INFO=/' gcc/configure
+./contrib/download_prerequisites
+cd ..
+mkdir gcc-build
+cd gcc-build
+PATH=/opt/powerpc64-linux-gcc-4.7.3/bin:$PATH ../gcc-4.7.3/configure --target=powerpc64-linux \
+	--prefix=/opt/powerpc64-linux-gcc-4.7.3 --without-headers --enable-languages=c \
+	--disable-nls --disable-shared --disable-threads --disable-decimal-float \
+	--disable-libmudflap --disable-libssp --disable-libgomp --disable-libquadmath
+PATH=/opt/powerpc64-linux-gcc-4.7.3/bin:$PATH make
+PATH=/opt/powerpc64-linux-gcc-4.7.3/bin:$PATH sudo make install
+
+gcc-4.8.1
+----------
+
+http://gcc.skazkaforyou.com/releases/gcc-4.8.1/gcc-4.8.1.tar.bz2
+
+tar xvjf gcc-4.8.1.tar.bz2
+cd gcc-4.8.1
+sed -i 's/BUILD_INFO=info/BUILD_INFO=/' gcc/configure
+./contrib/download_prerequisites
+cd ..
+mkdir gcc-build
+cd gcc-build
+PATH=/opt/powerpc64-linux-gcc-4.8.1/bin:$PATH ../gcc-4.8.1/configure --target=powerpc64-linux \
+	--prefix=/opt/powerpc64-linux-gcc-4.8.1 --without-headers --enable-languages=c \
+	--disable-nls --disable-shared --disable-threads --disable-decimal-float --disable-libatomic \
+	--disable-libmudflap --disable-libssp --disable-libgomp --disable-libquadmath
+PATH=/opt/powerpc64-linux-gcc-4.8.1/bin:$PATH make
+PATH=/opt/powerpc64-linux-gcc-4.8.1/bin:$PATH sudo make install

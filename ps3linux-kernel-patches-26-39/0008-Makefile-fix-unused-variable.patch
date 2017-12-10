@@ -1,0 +1,10 @@
+--- a/Makefile	2011-05-19 06:06:34.000000000 +0200
++++ b/Makefile	2012-06-07 10:20:14.553787549 +0200
+@@ -359,6 +359,7 @@
+ 		   -fno-strict-aliasing -fno-common \
+ 		   -Werror-implicit-function-declaration \
+ 		   -Wno-format-security \
++		   -Wno-unused-but-set-variable \
+ 		   -fno-delete-null-pointer-checks
+ KBUILD_AFLAGS_KERNEL :=
+ KBUILD_CFLAGS_KERNEL :=
