@@ -1,0 +1,89 @@
+HOWTO: Build Linux
+==================
+
+Building a Linux kernel or any OS you want to run on the Research
+Hypervisor is something you simply should know how to do, or use the
+countless number of resources on the internet that describe howto do
+this (See: www.google.com).
+
+Having said that... Here are some tips and information Specific to
+Research Hypervisor.
+
+Get the Linux source code.  Some good places for that are:
+  - http://kernel.org
+  - http://www.bkbits.com/
+
+Specific information on PPC64 can be found at:
+  http://penguinppc.org/ppc64/
+
+See our ./patch directory for any patches to specific Kernel Versions
+that are required to support virtualization.
+
+After you have build your kernel see Running_Linux for addition steps
+that may be required.
+
+Tips for running make (all command executed from the Linux source tree):
+
+  Machine Type
+  ============
+    To define the machine you are building Linux for you must define
+    the ARCH= make macro, examples:
+      $ make ARCH=i386
+    or
+      $ make ARCH=ppc64
+
+  Build out of source tree
+  ========================
+    We recommend building and configuring in a seperate directory,
+    this is done by defining O=, example
+      $ make ARCH=i386 O=../build/i386
+    or
+      $ make ARCH=ppc64 O=../build/ppc64
+    This allows you to use the same source tree for all your builds.
+
+  Kernel Configuration
+  ====================
+    Configuring your kernel can be tricky, you normally want to use
+    (or start) with a known working configuration for the machine you
+    want to run on.  See the kernel source package of your currently
+    running Linux Distribution.  Example:
+      $ make ARCH=ppc64 O=../build/ppc64 pSeries_defconfig
+
+    The above will build a Linux kernel that can be use as a guest
+    partition using unmodified Linux-2.6 sources.
+  
+    If you have applied one of our patches to your Linux source then
+    it should have come with a known working configuration in the
+    configs directory. There may also be configurations defined in the
+    patch directory of the Research Hypervisor Source tree.
+      $ cp configs/config.ppc64/minimal ../build/ppc64/.config
+      $ make ARCH=ppc64 O=../build/ppc64 oldconfig
+      $ make ARCH=ppc64 O=../build/ppc64
+
+  Cross Compiling
+  ===============
+    You can build the PPC64 kernel on antoher machine type, such as
+    linux-x86 or Mac OSX (see the Cross_Compiler HOWTO).  You need a
+    cross-compiler for this to be possible and you need to specify the
+    name[s] of the cross-compiler[s].
+      $ make ARCH=ppc64 O=../build/ppc64 \
+          CROSS_COMPILE=powerpc64-linux- CROSS32_COMPILE=powerpc-linux-
+  
+    *** Note: 64bit PPC Linux requires both a 32 and 64 bit toolchain.
+
+  Verbose Output
+  ==============
+    It, like me, you like verbose building information, add the the
+    V=1 macro to your make line.
+      $ make ARCH=ppc64 O=../build/ppc64 V=1 \
+          CROSS_COMPILE=powerpc64-linux- CROSS32_COMPILE=powerpc-linux-
+
+  Make From Any Directory
+  =======================
+    Paritulary useful for [x]emacs users of M-x compile, you can use
+    the -C option to make to ensure you run from the correct
+    directory:
+      Compile command: make -C <path to linux source> \
+        ARCH=ppc64 O=../build/ppc64 \
+        CROSS_COMPILE=powerpc64-linux- CROSS32_COMPILE=powerpc-linux-
+

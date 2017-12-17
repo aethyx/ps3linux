@@ -1,0 +1,400 @@
+#
+# Copyright (C) 2005 Jimi Xenidis <jimix@watson.ibm.com>, IBM Corporation
+#
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 2 of the License, or
+# (at your option) any later version.
+# 
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+# 
+# You should have received a copy of the GNU General Public License
+# along with this program; if not, write to the Free Software
+# Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307 USA
+#
+# $Id$
+# 
+
+#
+# These are standard autoconf
+#
+
+SHELL = @SHELL@
+
+prefix = @prefix@
+exec_prefix = @exec_prefix@
+
+bindir = @bindir@
+sbindir = @sbindir@
+libexecdir = @libexecdir@
+datadir = @datadir@
+sysconfdir = @sysconfdir@
+sharedstatedir = @sharedstatedir@
+localstatedir = @localstatedir@
+libdir = @libdir@
+infodir = @infodir@
+mandir = @mandir@
+includedir = @includedir@
+
+INSTALL = @INSTALL@
+INSTALL_PROGRAM = @INSTALL_PROGRAM@ $(AM_INSTALL_PROGRAM_FLAGS)
+INSTALL_DATA = @INSTALL_DATA@
+INSTALL_SCRIPT = @INSTALL_SCRIPT@
+transform = @program_transform_name@
+
+build_alias = @build_alias@
+build_triplet = @build@
+host_alias = @host_alias@
+host_triplet = @host@
+target_alias = @target_alias@
+target_triplet = @target@
+mkinstalldirs = $(SHELL) $(top_srcdir)/scripts/mkinstalldirs
+
+#
+# Toolchain flags
+#   I feel silly writing this but there has been confusion
+#     CFLAGS: Flags for the C compiler and are usually compiler specific
+#     CXXFLAGS: Flags for any C++ compiler
+#     CPPFLAGS: Flags for the C Preprocessor
+#	In order to group them together we introduce
+#	CPPDEFS: -Ds and -Us go here
+#	CPPDIRS: -Is go here
+#     LDFLAGS: Flags for the C compiler that are linker specific
+#     LDLIBS: Libraries to use, different from LDFLAGS
+#
+# PRE and POST are defined so local Makefiles and prepend and append flags
+
+# Interesting WARNING flags that are overkill but interesting
+# -Wshadow
+AS_WARN=@AS_WARN@
+CC_WARN=@CC_WARN@
+CXX_WARN=@CXX_WARN@
+
+# Flags we always want to give all (build, host, target) gccs
+ALL_ASFLAGS = -D__ASSEMBLY__
+ALL_CFLAGS =
+ALL_CXXFLAGS =
+ALL_CPPFLAGS =
+ALL_CPPDEFS =
+ALL_CPPDIRS  = -I$(top_builddir)/include	# just to get config.h
+# We need to let ISA specific headers to reference headers by absolute paths
+ALL_CPPDIRS += -I$(top_builddir) -I$(top_srcdir)
+
+ALL_LDFLAGS =
+ALL_LDLIBS = 
+
+ALL_COPTFLAGS= @ALL_COPTFLAGS@
+
+# The build machine is the machine you are building on, usually used
+# for building stuff like thinwire and other programs that are
+# required for building this project
+BUILD_ASFLAGS=	$(BUILD_PRE_ASFLAGS) \
+		@BUILD_ASFLAGS@ \
+		$(BUILD_POST_ASFLAGS) \
+		$(ALL_ASFLAGS)
+
+BUILD_COPTFLAGS= $(ALL_COPTFLAGS) @BUILD_COPTFLAGS@
+
+BUILD_CFLAGS=	$(BUILD_COPTFLAGS) \
+		$(BUILD_PRE_CFLAGS) \
+		@BUILD_CFLAGS@ \
+		$(BUILD_POST_CFLAGS) \
+		$(ALL_CFLAGS)
+
+BUILD_CXXFLAGS=	$(BUILD_COPTFLAGS) \
+		$(BUILD_PRE_CXXFLAGS) \
+		@BUILD_CXXFLAGS@ \
+		$(BUILD_POST_CXXFLAGS) \
+		$(ALL_CXXFLAGS)
+
+BUILD_CPPDEFS=	$(ALL_CPPDEFS) @BUILD_CPPDEFS@
+
+BUILD_CPPDIRS=	$(BUILD_PRE_CPPDIRS) \
+		@BUILD_CPPDIRS@ \
+		$(BUILD_POST_CPPDIRS) \
+		$(ALL_CPPDIRS)
+
+BUILD_CPPFLAGS=	$(BUILD_PRE_CPPFLAGS) \
+		$(BUILD_CPPDEFS) \
+		@BUILD_CPPFLAGS@ \
+		$(BUILD_POST_CPPFLAGS) \
+		$(BUILD_CPPDIRS) \
+		$(ALL_CPPFLAGS)
+
+BUILD_LDFLAGS=	$(BUILD_PRE_LDFLAGS) \
+		@BUILD_LDFLAGS@ \
+		$(BUILD_POST_LDFLAGS) \
+		$(ALL_LDFLAGS)
+
+# The host machine is the machine you are that will run the resulting code
+HOST_ASFLAGS=	$(HOST_PRE_ASFLAGS) \
+		@HOST_ASFLAGS@ \
+		$(HOST_POST_ASFLAGS) \
+		$(ALL_ASFLAGS) \
+		 -Wa,-gdwarf2 \
+		$(AS_WARN)
+
+HOST_COPTFLAGS= $(ALL_COPTFLAGS) @HOST_COPTFLAGS@
+
+HOST_CFLAGS=	$(HOST_COPTFLAGS) \
+		$(HOST_PRE_CFLAGS) \
+		@HOST_CFLAGS@ \
+		$(HOST_POST_CFLAGS) \
+		$(ALL_CFLAGS)       \
+		$(HOST_TRACE_FLAGS) \
+		$(CC_WARN)
+
+HOST_CXXFLAGS=	$(HOST_COPTFLAGS) \
+		$(HOST_PRE_CXXFLAGS) \
+		@HOST_CXXFLAGS@ \
+		$(HOST_POST_CXXFLAGS) \
+		$(ALL_CXXFLAGS) \
+		$(CXX_WARN)
+
+HOST_CPPDEFS=	$(ALL_CPPDEFS) @HOST_CPPDEFS@
+
+HOST_CPPDIRS=	$(HOST_PRE_CPPDIRS) \
+		@HOST_CPPDIRS@ \
+		$(HOST_POST_CPPDIRS) \
+		$(ALL_CPPDIRS)
+
+HOST_CPPFLAGS=	-nostdinc \
+		$(HOST_PRE_CPPFLAGS) \
+		$(HOST_CPPDEFS) \
+		@HOST_CPPFLAGS@ \
+		$(HOST_POST_CPPFLAGS) \
+		$(HOST_CPPDIRS) \
+		-I@HOST_GCC_INCLUDE@ \
+		$(ALL_CPPFLAGS)
+
+HOST_LDFLAGS=	-nostdlib \
+		$(HOST_PRE_LDFLAGS) \
+		@HOST_LDFLAGS@ \
+		$(HOST_POST_LDFLAGS) \
+		$(ALL_LDFLAGS) \
+		@LD_WARN@
+
+
+HOST_BFDNAME=	@HOST_BFDNAME@
+HOST_ALT_BFDNAME= @HOST_ALT_BFDNAME@
+HOST_BFDARCH=	@HOST_BFDARCH@
+
+
+# The target machine is the machine that this project generates code
+# for.  This is meaningless for this project but is here for
+# completeness and clarity.
+TARGET_CFLAGS=
+TARGET_CXXFLAGS=
+TARGET_CPPFLAGS=
+TARGET_LDFLAGS=	
+
+
+VERSION = @VERSION@
+PLATFORM = @PLATFORM@
+MACH= @MACHINE@
+
+ifndef ISA
+ISA = @ISA@
+endif
+
+CPU_GRP=@CPU_GRP@
+CPU_CORE=@CPU_CORE@
+
+BUILD_TOOLS_PREFIX=@BUILD_TOOLS_PREFIX@
+BUILD_AR = $(BUILD_TOOLS_PREFIX)ar
+BUILD_CC = $(BUILD_TOOLS_PREFIX)gcc
+BUILD_CXX = $(BUILD_TOOLS_PREFIX)g++
+BUILD_OBJCOPY = $(BUILD_TOOLS_PREFIX)objcopy
+BUILD_OBJDUMP = $(BUILD_TOOLS_PREFIX)objdump
+BUILD_RANLIB = $(BUILD_TOOLS_PREFIX)ranlib
+BUILD_COMPILE.c = $(BUILD_CC) $(BUILD_CFLAGS) $(BUILD_CPPFLAGS) -c
+BUILD_COMPILE.C = $(BUILD_CXX) $(BUILD_CXXFLAGS) $(BUILD_CPPFLAGS) -c
+BUILD_COMPILE.S = $(BUILD_CC) $(BUILD_ASFLAGS) $(BUILD_CPPFLAGS) -c
+BUILD_COMPILE.s = $(BUILD_CC) $(BUILD_ASFLAGS) -c
+BUILD_LINK.o = $(BUILD_CC) $(BUILD_LDFLAGS)
+
+HOST_TOOLS_PREFIX=@HOST_TOOLS_PREFIX@
+HOST_AR = $(HOST_TOOLS_PREFIX)ar
+HOST_CC = $(HOST_TOOLS_PREFIX)gcc
+HOST_CXX= false # You better not be using this compiler
+HOST_OBJCOPY = $(HOST_TOOLS_PREFIX)objcopy
+HOST_OBJDUMP = $(HOST_TOOLS_PREFIX)objdump
+HOST_RANLIB = $(HOST_TOOLS_PREFIX)ranlib
+HOST_COMPILE.c = $(HOST_CC) $(HOST_CFLAGS) $(HOST_CPPFLAGS) -c
+HOST_COMPILE.S = $(HOST_CC) $(HOST_ASFLAGS) $(HOST_CPPFLAGS) -c
+HOST_COMPILE.s = $(HOST_CC) $(HOST_ASFLAGS) -c
+HOST_LINK.o = $(HOST_CC) $(HOST_LDFLAGS)
+HOST_ASM.c = $(HOST_CC) $(HOST_CFLAGS) $(HOST_CPPFLAGS) -S
+HOST_ASM.o = $(HOST_OBJDUMP) --disassemble
+
+#
+# Some HOSTs platforms need to support an alternate ABI
+#
+HOST_ALT_TOOLS_PREFIX=@HOST_ALT_TOOLS_PREFIX@
+HOST_ALT_AR = $(HOST_ALT_TOOLS_PREFIX)ar
+HOST_ALT_CC = $(HOST_ALT_TOOLS_PREFIX)gcc
+HOST_ALT_CXX= false # You better not be using this compiler
+HOST_ALT_OBJCOPY = $(HOST_ALT_TOOLS_PREFIX)objcopy
+HOST_ALT_OBJDUMP = $(HOST_ALT_TOOLS_PREFIX)objdump
+HOST_ALT_RANLIB = $(HOST_ALT_TOOLS_PREFIX)ranlib
+HOST_ALT_COMPILE.c = $(HOST_ALT_CC) $(HOST_CFLAGS) $(HOST_CPPFLAGS) -c
+HOST_ALT_COMPILE.S = $(HOST_ALT_CC) $(HOST_ASFLAGS) $(HOST_CPPFLAGS) -c
+HOST_ALT_COMPILE.s = $(HOST_ALT_CC) $(HOST_ASFLAGS) -c
+HOST_ALT_LINK.o = $(HOST_ALT_CC) $(HOST_LDFLAGS)
+HOST_ALT_ASM.c = $(HOST_ALT_CC) $(HOST_CFLAGS) $(HOST_CPPFLAGS) -S
+HOST_ALT_ASM.o = $(HOST_ALT_OBJDUMP) --disassemble
+
+ifdef OBJECTS
+DEPS_MAGIC := $(shell mkdir .deps > /dev/null 2>&1 || :)
+endif
+
+DEP_OBJECTS += $(OBJECTS)
+DEP_FILES += $(DEP_OBJECTS:%.o=.deps/%.P)
+
+
+# Magic Dependency stuff
+define make-dependencies
+  @-cp .deps/$(*F).pp .deps/$(*F).P; \
+  tr ' ' '\012' < .deps/$(*F).pp \
+    | sed -e 's/^\\$$//' -e '/^$$/ d' -e '/:$$/ d' -e 's/$$/ :/' \
+      >> .deps/$(*F).P; \
+  rm .deps/$(*F).pp
+endef
+
+#
+# Compilers incorrectly(?) specificy the dep target to be .o when it
+# should really be .s
+#
+define make-dependencies.s
+  @-sed -e 's/\.o:/.s:/' < .deps/$(*F).pp > .deps/$(*F).P; \
+  tr ' ' '\012' < .deps/$(*F).pp \
+    | sed -e 's/^\\$$//' -e '/^$$/ d' -e '/:$$/ d' -e 's/$$/ :/' \
+      >> .deps/$(*F).P; \
+  rm .deps/$(*F).pp
+endef
+
+# No suffix rules
+.SUFFIXES:
+
+# All intermediate target are not to be removed
+.SECONDARY:
+
+#
+# Order is important
+#
+%.o: %.s
+	$($(CUR_TOOL)_COMPILE.s) $<
+
+%.o: %.S
+	@echo '$($(CUR_TOOL)_COMPILE.S) $(ASFLAGS) $<'; \
+	$($(CUR_TOOL)_COMPILE.S) -Wp,-MD,.deps/$(*F).pp $<
+	$(make-dependencies)
+
+%.o: %.c
+	@echo '$($(CUR_TOOL)_COMPILE.c) $<'; \
+	$($(CUR_TOOL)_COMPILE.c) -Wp,-MD,.deps/$(*F).pp $<
+	$(make-dependencies)
+
+%.o: %.C
+	@echo '$($(CUR_TOOL)_COMPILE.C) $<'; \
+	$($(CUR_TOOL)_COMPILE.C) -Wp,-MD,.deps/$(*F).pp $<
+	$(make-dependencies)
+
+%.s: %.c
+	@echo '$($(CUR_TOOL)_ASM.c) $<'; \
+	$($(CUR_TOOL)_ASM.c) -Wp,-MD,.deps/$(*F).pp $<
+	$(make-dependencies.s)
+
+%: %.o
+	$($(CUR_TOOL)_LINK.o) $^ $($(CUR_TOOL)_LDLIBS) -o $@
+
+.PHONY: $(SUBDIRS)
+all: $(SUBDIRS:%=%-all)
+%-all: %
+	$(MAKE) -C $< all 
+
+install: $(SUBDIRS:%=%-install)
+%-install: %
+	$(MAKE) -C $< install
+
+clean-depend:
+	$(RM) -r .deps
+
+clean: $(SUBDIRS:%=%-clean) clean-depend
+%-clean: %
+	$(MAKE) -C $< clean
+
+ASM_DEFS_HEAD=$(top_srcdir)/include/asm_defs.head
+BUILT_SOURCES += asm_defs.h gen.h gen.s
+DEP_FILES += .deps/gen.P
+
+gen.s: gen.c
+	$(HOST_ASM.c) $< -o $@
+
+gen.h: gen.s
+	grep '^#define' $< > $@
+
+# have to strip leading $ from immediates
+asm_defs.h: $(ASM_DEFS_HEAD) gen.h
+	cat $^ | sed -e 's,\$$,,' > $@
+
+CLEAN_FILES += gen.s gen.h asm_defs.h
+
+# this list cannot be
+-include $(DEP_FILES) noinclude
+# This is so far the only way to actually get all of them
+# Not all .o's are in OBJECTS
+#-include .deps/*.P noinclude
+
+
+TRACE_OBJECTS=
+#
+# Makefile.trace should only append to TRACE_OBJECTS, e.g.
+#
+# TRACE_OBJECTS += start.o head.o
+#
+#
+-include $(CURDIR)/Makefile.trace
+$(TRACE_OBJECTS): HOST_TRACE_FLAGS=-finstrument-functions
+#
+# This rule is used to build something unconditionally
+#
+FRC:
+
+
+# One day we will figure out how to auto reconfigure when necessary
+#
+Makefile: $(srcdir)/Makefile.in
+	cd $(top_builddir) \
+	  && $(SHELL) ./config.status
+
+
+#
+# Clean rules
+#   clean:     remove all files generated by the build, including the .deps.
+#   distclean: leave only directory skeleton behind
+
+CLEAN_FILES += $(OBJECTS)
+DISTCLEAN_FILES += Makefile
+
+clean:
+	$(RM) $(CLEAN_FILES)
+
+#
+# if not --enable-gdb, then USE_GDB_STUB should be undefined
+#
+ENABLE_GDB = @ENABLE_GDB@
+ifeq ($(ENABLE_GDB),"yes")
+USE_GDB_STUB = 1
+endif
+
+ENABLE_THINWIRE = @ENABLE_THINWIRE@
+
+LIBBZ2_SRCDIR = @LIBBZ2_SRCDIR@
+
+BOOT_ENVIRONMENT = @BOOT_ENVIRONMENT@
+
+EXTERNAL_CONTROLLER = @EXTERNAL_CONTROLLER@

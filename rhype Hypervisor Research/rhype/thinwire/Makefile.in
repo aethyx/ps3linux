@@ -1,0 +1,62 @@
+#
+# Copyright (C) 2005 Jimi Xenidis <jimix@watson.ibm.com>, IBM Corporation
+#
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 2 of the License, or
+# (at your option) any later version.
+# 
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+# 
+# You should have received a copy of the GNU General Public License
+# along with this program; if not, write to the Free Software
+# Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307 USA
+#
+# $Id$
+#
+top_srcdir = @top_srcdir@
+srcdir = @srcdir@
+VPATH = @srcdir@:@srcdir@/thinwire-src
+
+top_builddir = ..
+
+TARGETS = thinwire3 thinwire2 thinwire console runthinwire simip
+
+OBJECTS = thinwire3.o thinwire.o console.o simip.o
+
+
+thinwire2: thinwire
+	cp thinwire thinwire2
+
+include $(top_builddir)/Makefile.conf
+
+BUILD_CPPDEFS += -DNL_NEEDS_CR
+
+all: $(TARGETS)
+
+CUR_TOOL=BUILD
+
+# We should probably do this better, but..
+# gcc 3.x requires g++ to drive the linking of c++ components
+# Linking this way add -lstdc++ to the link line, so we add it manually
+#BUILD_LDLIBS += -lstdc++
+
+runthinwire: runthinwire.sh
+	$(INSTALL_PROGRAM) $< $@
+
+# FIXME
+install: runthinwire
+	@$(NORMAL_INSTALL)
+	$(mkinstalldirs) $(DESTDIR)$(bindir)
+	@list='$^'; for p in $$list; do \
+	  if test -f $$p; then \
+	    echo "  $(INSTALL_PROGRAM) $$p $(DESTDIR)$(bindir)/`echo $$p|sed 's/$(EXEEXT)$$//'|sed '$(transform)'|sed 's/$$/$(EXEEXT)/'`"; \
+	     $(INSTALL_PROGRAM) $$p $(DESTDIR)$(bindir)/`echo $$p|sed 's/$(EXEEXT)$$//'|sed '$(transform)'|sed 's/$$/$(EXEEXT)/'`; \
+	  else :; fi; \
+	done
+
+CLEAN_FILES += $(TARGETS)
+DISTCLEAN_FILES += Makefile

@@ -1,0 +1,61 @@
+#
+# Copyright (C) 2005 Jimi Xenidis <jimix@watson.ibm.com>, IBM Corporation
+#
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 2 of the License, or
+# (at your option) any later version.
+# 
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+# 
+# You should have received a copy of the GNU General Public License
+# along with this program; if not, write to the Free Software
+# Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307 USA
+#
+# $Id$
+#
+
+RTAS_LTEXT=0x0
+RTAS_HEAD=rh_head.o
+RTAS_OBJECTS=	rh.o \
+		leap.o \
+		rh_display_character.o \
+		rh_system_reboot.o \
+		rh_power_off.o \
+		rh_ibm_int.o \
+		rh_ibm_xive.o \
+		rh_get_time_of_day.o \
+		rh_set_time_of_day.o \
+		rh_pci_config.o
+
+ALL_TARGETS= $(OF_TARGET)
+
+rtas_image.dbg: HOST_LDFLAGS += -Wl,--omagic,-Ttext,$(RTAS_LTEXT)
+
+rtas_image.dbg: $(RTAS_HEAD) $(RTAS_OBJECTS) $(HLIB)
+	$($(CUR_TOOL)_LINK.o) $(RTAS_HEAD) $(RTAS_OBJECTS) $(HOST_LDLIBS) -o $@
+
+CLEAN_FILES += rtas_image rtas_image.dbg $(RTAS_HEAD) $(RTAS_OBJECTS)
+CLEAN_FILES += rtas_image64 rtas_image32
+CLEAN_FILES += of_image64.o of_image32.o
+
+OF_LTEXT=0x0
+#OF_LTEXT=0x3f00000
+
+OF_OBJECTS +=	ofh_cpu.o \
+		rtas.o \
+		rtas_image32.o \
+		rtas_image64.o
+
+rtas_image32 rtas_image64: rtas_image%: ../%/rtas_image
+	$(HOST_OBJCOPY) --output-target=binary $< $@
+
+rtas_image32.o rtas_image64.o: %.o: %
+	$($(CUR_TOOL)_OBJCOPY) $(OBJ_IMAGE_FLAGS) $< $@
+
+include $(srcdir)/../../Makefile.common
+
+OBJECTS += $(RTAS_OBJECTS)

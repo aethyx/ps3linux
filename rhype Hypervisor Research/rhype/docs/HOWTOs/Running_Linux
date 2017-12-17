@@ -1,0 +1,38 @@
+HOWTO: Running Linux
+
+If you have not built your Linux kernel then see Build_Linux
+
+
+Boot tasks that may be necessary for your environment, these tasks are
+described below.
+  Booting Linux X86
+  =================
+    In order to support any BIOS access that a linux boot image
+    requires (not vmlinux), there is an additional CVS module called
+    'lboot' that exists to support this scenario.  See the README of
+    that module.
+      *** Note: This is not necessary for PPC
+
+  Booting on Simulator
+  ====================
+    The lboot module is also useful to avoid the uncompressing kernels
+    when running on simulators.  So we have provided another module
+    called 'lbootppc' that can allow you to avoid the compression
+    stage.
+
+  Device Tree
+  ===========
+    In order to use the Hypervisor Console device from a kernel _not_
+    configured with devfs you will need to create the node on the root
+    file system (as root):
+      # mknod /dev/hvc0 c 229 0
+
+  Console Login
+  =============
+    If you wish to login using the Hypervisor Console you will need to
+    enable that in linux by running a getty similar to that run for a
+    serial port.  See man pages for inittab(5) and the various gettys
+    out there (getty, agetty, mingetty).
+      ***Note if you with to login as root you need to add hvc0 to the
+      securetty(5) list (as root):
+        # echo hvc0 >> /etc/securetty

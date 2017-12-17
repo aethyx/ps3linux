@@ -1,0 +1,64 @@
+#
+# Copyright (C) 2005 Jimi Xenidis <jimix@watson.ibm.com>, IBM Corporation
+#
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 2 of the License, or
+# (at your option) any later version.
+# 
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+# 
+# You should have received a copy of the GNU General Public License
+# along with this program; if not, write to the Free Software
+# Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307 USA
+#
+# $Id$
+#
+
+top_srcdir = @top_srcdir@
+srcdir=@srcdir@
+VPATH = @srcdir@:@srcdir@/../Figures:@srcdir@/../API:@srcdir@/..
+top_builddir = ..
+
+all: html
+
+include $(top_builddir)/Makefile.conf
+
+include $(srcdir)/../Figures/Makefile.fig
+
+COMMON += 
+#include $(srcdir)/../API/Makefile.api
+
+DOCSRCS = rhype.sgml 
+
+FORCE:
+
+HACKERS_GUIDE=$(top_builddir)/WhitePapers/HackersGuide/HackersGuide.html
+OVERVIEW=$(top_builddir)/WhitePapers/Overview/Research_Hypervisor.sgml
+
+API=$(top_builddir)/API/API.html
+
+$(HACKERS_GUIDE) $(API): FORCE
+	$(MAKE) -C $(@D) $(@F)
+
+HackersGuide.shtml: $(HACKERS_GUIDE)
+	cat $(srcdir)/top.html $< $(srcdir)/bottom.html > $@
+
+Research_Hypervisor.shtml: $(OVERVIEW)
+	cat $(srcdir)/top.html $< $(srcdir)/bottom.html > $@
+
+index.shtml: $(TARGETS_HTML) top.html bottom.html
+	cat $(srcdir)/top.html $< $(srcdir)/bottom.html > $@
+
+index.shtml: HackersGuide.shtml Research_Hypervisor.shtml
+html: index.shtml
+#ps:   $(TARGETS_PS)   
+#pdf:  $(TARGETS_PDF)
+#$(TARGETS): %: %.html %.ps %.pdf
+
+CLEAN_FILES += index.shtml HackersGuide.shtml Research_Hypervisor.shtml rhype.html *.patch
+
+### watgsa:/projects/w/www-stage/hypervisor

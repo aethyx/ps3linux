@@ -1,0 +1,107 @@
+dnl
+dnl Copyright (C) 2005 Jimi Xenidis <jimix@watson.ibm.com>, IBM Corporation
+#
+#
+# build this with the following command
+#  $ autoconf configure.in |
+#	 sed -ne '/#BEGIN_CONFIG/,/#END_CONFIG/p' > configure
+
+AC_INIT(../../include/x86/mmu.h)
+
+AC_CHECK_TOOL(bash)
+
+#BEGIN_CONFIG
+
+dnl
+dnl Copyright (C) 2005 Jimi Xenidis <jimix@watson.ibm.com>, IBM Corporation
+dnl
+dnl This program is free software; you can redistribute it and/or modify
+dnl it under the terms of the GNU General Public License as published by
+dnl the Free Software Foundation; either version 2 of the License, or
+dnl (at your option) any later version.
+dnl 
+dnl This program is distributed in the hope that it will be useful,
+dnl but WITHOUT ANY WARRANTY; without even the implied warranty of
+dnl MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+dnl GNU General Public License for more details.
+dnl 
+dnl You should have received a copy of the GNU General Public License
+dnl along with this program; if not, write to the Free Software
+dnl Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307 USA
+dnl
+dnl $Id$
+dnl 
+
+
+echo "Configuring for x86..."
+
+AC_DEFINE(TARGET_ILP32)
+AC_DEFINE(CACHE_LINE_SIZE, 32)
+
+LIBDIRS=x86
+
+# These are used for vpath and -I
+ISA=x86
+CPU_GRP=.
+CPU_CORE=.
+
+HOST_CPPDIRS="-I\$(top_srcdir)/include/x86 ${HOST_CPPDIRS}"
+HOST_BFDNAME=elf32-i386
+HOST_BFDARCH=i386
+HOST_LDFLAGS="${HOST_LDFLAGS} -L\$(top_builddir)/lib/x86"
+plat_outputs="${plat_outputs} lib/x86/Makefile"
+
+
+if test "$host" = "$build"; then
+  HOST_TOOLS_PREFIX=
+else
+  HOST_TOOLS_PREFIX=i386-linux-
+fi
+
+AC_MSG_CHECKING(for supported boot-env for x86)
+case "${boot_env}" in
+  default | grub | GRUB)
+    boot_env=grub
+    BOOT_ENV=boot_grub.o
+    ;;
+  *)
+    AC_MSG_ERROR(x86 Boot Environment ${boot_env}: unsupported)
+esac
+AC_MSG_RESULT($boot_env)
+
+AC_MSG_CHECKING([for supported boot-console for x86])
+case "${boot_console_dev}" in
+  default | UART | uart | UART-NS1675 | uart-ns1675)
+    boot_console_dev=uart-ns1675
+    IO_CHANNELS="${IO_CHANNELS} uartNS16750.o"
+    BOOT_CONSOLE_DEV=boot_uart_ns16750.o
+    if test "$boot_console_dev_addr" = "default"; then
+      boot_console_dev_addr=0x3f8
+    fi
+    AC_DEFINE_UNQUOTED(BOOT_CONSOLE_DEV_ADDR, $boot_console_dev_addr)
+    if test "$boot_console_dev_opts" != "default"; then
+      AC_DEFINE_UNQUOTED(BOOT_CONSOLE_DEV_OPTS, "$boot_console_dev_opts")
+    fi
+    ;;
+
+  VGA | vga)
+    boot_console_dev=vga
+    IO_CHANNELS="${IO_CHANNELS} vga.o"
+    BOOT_CONSOLE_DEV=boot_vga.o
+    if test "$boot_console_dev_addr" = "default"; then
+      boot_console_dev_addr=0xb8000
+    fi
+    AC_DEFINE_UNQUOTED(BOOT_CONSOLE_DEV_ADDR, $boot_console_dev_addr)
+    ;;
+
+  *)
+    AC_MSG_ERROR(Unknown boot console: $boot_console)
+    ;;
+esac
+AC_MSG_RESULT($boot_console_dev, $boot_console_dev_addr, $boot_console_dev_opts)
+
+if test "$enable_vga" = "yes"; then
+  IO_CHANNELS="${IO_CHANNELS} vga.o"
+fi
+
+#END_CONFIG

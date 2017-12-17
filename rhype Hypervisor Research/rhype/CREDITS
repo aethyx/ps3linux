@@ -1,0 +1,25 @@
+#
+# $Id$
+#
+
+Over the years there have been several contributors and contributions
+to this project, much of it for demonstration purposes and much of it
+completely replaced, reimplemented or removed.  I take full
+responsibility for this list and its [in]completeness.
+
+Below are a current list of main contributors.
+I welcome any patches that add to this file, or add individuals if they feel that there name should be in any source file.
+
+My name is in the copyright statements because I am taking
+responsibility for the contained, if you would like to share in that
+responsibility and are able to then please let me know.
+
+-- Jimi Xenidis <jimix@watson.ibm.com>
+
+In alphabetical order:
+
+CRQs:				  Stefan Berger <stefanb@us.ibm.com>
+x86, Security:			  Leendert Van Doorn <leendert@us.ibm.com>
+Visionary:			  Orran Krieger <okrieg@us.ibm.com>
+Anything and everything:	  Michal Ostrowski <mostrows@watson.ibm.com>
+x86-GDB:			  Scott Parish <srparish@us.ibm.com>

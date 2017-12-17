@@ -1,0 +1,379 @@
+<!--
+  (C) Copyright IBM Corp. 2001.
+  All Rights Reserved
+
+  $Id$
+-->
+<!DOCTYPE article PUBLIC "-//OASIS//DTD DocBook V3.1//EN" [
+
+<!-- To disable review comments replace INCLUDE with IGNORE -->
+<!ENTITY % review "INCLUDE" >
+
+<!-- CVS gives us these -->
+<!ENTITY release "$Id$">
+<!ENTITY proj	"Research Hypervisor">
+
+<!-- URLs handy for this document -->
+<!ENTITY watson.url	"http://www.watson.ibm.com">
+]>
+
+
+<!--
+    In DocBook terms, a white paper is an article.
+-->
+<article status="draft" lang="en">
+  <artheader>
+    <title>The Research Hypervisor</title>
+    <subtitle>A Multi-Platform, Multi-Purpose Research Hypervisor</subtitle>
+    <author>
+      <firstname>&proj;</firstname>
+      <surname>Team</surname>
+      <affiliation>
+	<orgname>
+	  <ulink url="http://www.research.ibm.com">
+	    <trademark class="registered">IBM</trademark> </ulink>
+	</orgname>
+	<orgdiv>
+	  <ulink url="&watson.url;"> TJ Watson Research Center
+	  </ulink>
+	</orgdiv>
+      </affiliation>
+    </author>
+
+    <releaseinfo>
+      &release;
+    </releaseinfo>
+    <copyright>
+      <year>2005</year>
+      <holder>IBM Corp.</holder>
+    </copyright>
+  </artheader>
+  <section>
+    <title>News</title>
+    <para>
+      We'll be trying to keep this up to date as much as possible.
+    </para>
+    <section>
+      <title>
+	Fri Jul  8 09:01:19 EDT 2005
+      </title>
+      <para>
+	New CVS instructions, please see below.
+      </para>
+    </section>
+    <section>
+      <title>
+	Fri Jul  7 08:50:04 EDT 2005
+      </title>
+      <para>
+	New <emphasis>draft</emphasis> white paper describing the
+	principle functionality of the Research Hypervisor.
+      </para>
+    </section>
+    <section>
+      <title>
+	Tue Mar 8 14:21:30 EST 2005
+      </title>
+      <para>
+	Linux patch finally released. It is a single diff that
+	represents three distinct pieces of work.
+	<orderedlist>
+	  <listitem>
+	    <para>
+	      The Linux x86 patch.
+	    </para>
+	  </listitem>
+	  <listitem>
+	    <para>
+	      Commonized VIO layer, where the PPC64 VIO layer is
+	      "fixed" so it can target x86 as well.
+	    </para>
+	  </listitem>
+	  <listitem>
+	    <para>
+	      Teach the MAPLE PPC64 configuration to be Hypervisor aware.
+	    </para>
+	  </listitem>
+	</orderedlist>
+      </para>
+    </section>
+    <section>
+      <title>
+	Tue Mar 1 09:25:22 EST 2005
+      </title>
+      <para>
+	Mailing lists have been added, information <link
+	linkend="mailing.lists">below</link>.
+      </para>
+    </section>
+  </section>
+  <section>
+    <title>Introduction</title>
+    <para>
+      The Research Hypervisor from IBM research has been
+      developed over the last 3 years to validate virtualization
+      features in new hardware architectures and to study fundamental
+      research issues in virtualization. For example, the Research
+      Hypervisor has been used:
+      <itemizedlist>
+	<listitem>
+	  <para>
+	    to validate features developed for new processors like the
+	    <ulink
+		   url="http://www-03.ibm.com/chips/news/2004/1129_cell1.html">Cell</ulink>.
+	  </para>
+	</listitem>
+	<listitem>
+	  <para>
+	    to study future architecture ideas and functions for the
+	    high performance computing community within the <ulink
+	    url="http://domino.research.ibm.com/comm/pr.nsf/pages/news.20030710_darpa.html">PERCS</ulink>
+	    project for DARPA.
+	  </para>
+	</listitem>
+	<listitem>
+	  <para>
+	    to study security in the context of virtualization within
+	    the <ulink
+	    url="http://www.research.ibm.com/secure_systems_department/projects/hypervisor/">sHype</ulink>
+	    project.
+	  </para>
+	</listitem>
+      </itemizedlist>
+    </para>
+    <para>
+      The Research Hypervisor was designed from the start to be
+      multi-platform, and today supports both the Power and x86
+      architectures. On Power, it conforms to the interfaces used
+      by Linux running on IBM's commercial POWER Hypervisor in the new
+      <ulink
+      url="http://www-1.ibm.com/servers/eserver/pseries/hardware/pseries_family.html">POWER5-based
+      servers</ulink>, and hence runs unmodified Linux
+      distributions. On Intel we support a modified Linux kernel and
+      demonstrate the multi-platform characteristics of the POWER Hypervisor
+      interfaces.
+    </para>
+  </section>
+  <section>
+    <title>Maintainers</title>
+    <para>
+      Core architects of the project are:
+      <simplelist>
+	<member>
+	  <quote>Jimi Xenidis</quote>
+	  <email>jimix@watson.ibm.com</email>.
+	</member>
+	<member>
+	  <quote>Leendert Van Doorn</quote>
+	  <email>leendert@watson.ibm.com</email>.
+	</member>
+	<member>
+	  <quote>Michal Ostrowski</quote>
+	  <email>mostrows@watson.ibm.com</email>.
+	</member>
+	<member>
+	  <quote>Orran Krieger</quote>
+	  <email>okrieg@us.ibm.com</email>.
+	</member>
+      </simplelist>
+      The overall maintainer is Jimi Xenidis, and the maintainer for
+      x86 is Leendert Van Doorn.
+    </para>
+    <para>
+      On PowerPC the Research Hypervisor can run unmodified Linux
+      distributions. Also, on Power we support the <ulink
+      url="www.research.ibm.com/k42">K42</ulink> operating system
+      kernel, and a library OS that we have been developing for High
+      Performance Computing applications. On Intel we support a
+      modified Linux kernel.
+    </para>
+  </section>
+  <section>
+    <title>Key features</title>
+    <para>
+      <simplelist>
+	<member>
+	  From-scratch implementation and design decisions that allow
+	  the core trusted code base to be tiny, making it appropriate
+	  for secure design.
+	</member>
+	<member>
+	  Memory management architecture designed to enable large
+	  pages, to be cache efficient on common operations and
+	  friendly to future self-virtualizing I/O devices.
+	</member>
+	<member>
+	  Source configuration system and careful choice of internal
+	  interfaces to allow implementation to be tuned to specific
+	  platform requirements and supported services, and maximizes
+	  code reuse/sharing between platforms.
+	</member>
+	<member>
+	  On Intel, design decisions that result in a small set of
+	  changes to Linux. (The Power Linux kernel runs unmodified.)
+	</member>
+	<member>
+	  A reduced and open source implementation of the proven LPAR
+	  environment used in IBM's commercial Hypervisors; unmodified
+	  distributions are supported. Interfaces are designed with
+	  SMP/SMT clients from the beginning.
+	</member>
+      </simplelist>
+    </para>
+  </section>
+  <section>
+    <title>Playing with the Research Hypervisor</title>
+    <para>
+      Unfortunately we are unable to accept patches at this time.
+      However, we do wish to make our source available for discussion
+      and use by a larger group.
+    </para>
+    <section>
+      <title>Using the CVS Repository</title>
+      <warning>
+	<para>
+	  We have switched to using ssh.  Please follow the
+	  instructions below.
+	</para>
+      </warning>
+      <para>
+	Make sure you are setup to use ssh, <ulink
+	url="http://www.openssh.org/">http://www.openssh.org/</ulink>
+	is an excellent place to start.
+      </para>
+      <orderedlist>
+	<listitem>
+	  <para>
+	    Place the following public "private key" in a file.  The
+	    example below assumes it is in
+	    <filename>~/.ssh/kcvs</filename>:
+	    <programlisting>
+-----BEGIN DSA PRIVATE KEY-----
+MIIBuwIBAAKBgQC2mAehzPXSfpwSpvWLh4qAJZooBGL/2GXvQU66LgvvaoCCnB0A
+f+USAEpG03cXEWhXhLtLMLKQTzaidfepau2k5+Ix9yVLtkEVYTDfaa/rN1u8lYUO
+RBAnODc3ZwcjwPVY1/P0CJZVikpM1fHQ/Gd844J+znWkJT9+7JpsA5OMwQIVAJ5s
+L29MyukPBtU/lCH1rbpAd4wTAoGBALCyQIRspcKnFl0AcWtw8UBqqtazXsH33FO3
+PwVTg9E/sLYN1JhXHD09iMKnDF6O87AMnY9ryrK4ML6BYFRlo0LiFx459PiV6Azn
+f5Z4I1eRMR44nTx74ZoWnYRAhFIWooCQx2wE0zts4Rfwhmu2g9+1Dr7wlQCQmSto
+kDfxqSE6AoGAFEE5vSlYkEAlvB80tFS+Fu7QhAqrmw5fLQvvqLlrpPCiNrJWwi0e
+x0Tdo0P2s0hnODBbtpOsOSbqnBxKj3gKLzCX7Yz7VCWBRcR+p2C9HjNdi+eBW+3G
+fTfbjAJ9oXnlmRBeXGsq9hEiDUOw0E5rg8jhHT+afnCYkUscW/hJBCsCFFaxiti8
+LubgdNfucZUY0FGY7tLq
+-----END DSA PRIVATE KEY-----
+	    </programlisting>
+	  </para>
+	</listitem>
+	<listitem>
+	  <para>
+	    Add the following lines to <filename>~/.ssh/config</filename>:
+	    <programlisting>
+Host kcvs
+  HostName kcvs.watson.ibm.com
+  User cvs
+  IdentityFile ~/.ssh/kcvs
+  Protocol 2
+  ForwardAgent no
+  ForwardX11 no
+  Compression yes
+	    </programlisting>
+	  </para>
+	</listitem>
+	<listitem>
+	  <para>
+	    Now you can access the source by using the following command:
+	  </para>
+	  <para>
+	    <command>
+	      $ cvs -d cvs@kcvs:/u/kitchawa/cvsroot co rhype
+	    </command>
+	  </para>
+	</listitem>
+      </orderedlist>
+      <para>
+	Once you've got the repository checked out, <command>cvs
+	update</command> will sync your local copy with the
+	repository. See the CVS manual for additional information on
+	how to use CVS.
+      </para>
+    </section>
+    <section>
+      <title>Other Resources</title>
+      <para>
+	Contacts, docs and other tasty morsels.
+      </para>
+      <section id="mailing.lists">
+	<title>Mailing List</title>
+	<para>
+	  Thanks to our friends at <ulink
+	    url="http://ozlabs.org/">OzLabs</ulink> we now have
+	  some mailing lists.
+	  <itemizedlist>
+	    <listitem>
+	      <formalpara>
+		<title>Discussion List</title>
+		<para>
+		  <ulink url="mailto:rhype@ozlabs.org">
+		    rhype@ozlabs.org
+		  </ulink>
+		  sign up at 
+		  <ulink url="http://ozlabs.org/mailman/listinfo/rhype">
+		    rhype Info Page
+		  </ulink>.
+		</para>
+	      </formalpara>
+	    </listitem>
+	    <listitem>
+	      <formalpara>
+		<title>CVS Commits</title>
+		<para>
+		  <ulink url="mailto:rhype@ozlabs.org">
+		    rhype-cvs@ozlabs.org
+		  </ulink>
+		  sign up at 
+		  <ulink
+		    url="http://ozlabs.org/mailman/listinfo/rhype-cvs">
+		    rhype-cvs Info Page
+		  </ulink>.
+		</para>
+	      </formalpara>
+	    </listitem>
+	  </itemizedlist>
+	</para>
+      </section>
+      <section>
+	<title>Hacker's Guide</title>
+	<para>
+	  Can be build like all other documentation. A recent snap
+	  shot is <ulink url="HackersGuide.shtml">here
+	  (HackersGuide)</ulink> for your amusement.
+	</para>
+      </section>
+      <section>
+	<title>Research Hypervisor Principles</title>
+	<para>
+	  A recent snap shot is <ulink url="Research_Hypervisor.shtml">here
+	  (Research_Hypervisor)</ulink> for your amusement.
+	</para>
+      </section>
+      <section>
+	<title>IRC</title>
+	<para>
+	  Channel #rhype on irc.freenode.net or <ulink
+	  url="irc://irc.freenode.net/%23rhype">irc://irc.freenode.net/#rhype</ulink>
+	</para>
+      </section>
+    </section>
+  </section>
+</article>
+
+<!--
+Local Variables:
+sgml-validate-command: "nsgmls -s %s %s"
+sgml-indent-data: t
+sgml-insert-missing-element-comment: t
+End:
+-->
+<!--
+  LocalWords:
+ -->  
+

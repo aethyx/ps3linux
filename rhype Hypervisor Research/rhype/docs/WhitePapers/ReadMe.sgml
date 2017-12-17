@@ -1,0 +1,534 @@
+<!--
+  (C) Copyright IBM Corp. 2001.
+  All Rights Reserved
+
+  $Id$
+-->
+<!DOCTYPE article PUBLIC "-//OASIS//DTD DocBook V3.1//EN" [
+
+<!-- To disable review comments replace INCLUDE with IGNORE -->
+<!ENTITY % review "INCLUDE" >
+
+<!-- CVS gives us these -->
+<!ENTITY user "$Author$">
+<!ENTITY date "$Date$">
+<!ENTITY revision "$Revision">
+<!ENTITY proj	"Hypervisor">
+
+<!-- URLs handy for this document -->
+<!ENTITY gnu.url	"http://www.gnu.org">
+<!ENTITY watson.url	"http://www.watson.ibm.com">
+<!ENTITY emacs.url	"&gnu.url/software/emacs/emacs.html">
+<!ENTITY xemacs.url	"http://www.xemacs.org">
+<!ENTITY make.url	"&gnu.url/software/make">
+<!ENTITY oasis.url	"http://www.oasis-open.org">
+<!ENTITY dbhtml.url	"&oasis.url/docbook/documentation/reference/html" >
+<!ENTITY db.url		"&dbhtml.url/docbook.html"> 
+<!ENTITY dbel.url	"&dbhtml.url/refelem.html">
+<!ENTITY rpm.url	"http://rpmfind.net">
+<!ENTITY rpmq.url	"&rpm.url;/linux/rpm2html/search.php?query">
+<!ENTITY cygwin.url	"http://cygwin.com">
+]>
+
+
+<!--
+    In DocBook terms, a white paper is and article.
+-->
+<article status="draft" lang="en">
+  <artheader>
+    <title>Read Me</title>
+    <subtitle>How to write DocBook Documents</subtitle>
+    <author>
+      <firstname>&proj;</firstname>
+      <surname>Team</surname>
+      <affiliation>
+	<orgname>
+	  <ulink url="http://www.ibm.com">
+	    <trademark class="registered">IBM</trademark> </ulink>
+	</orgname>
+	<orgdiv>
+	  <ulink url="&watson.url;"> TJ Watson Research Center
+	  </ulink>
+	</orgdiv>
+      </affiliation>
+    </author>
+
+<!--
+    I wanted an example of using copyrights and version
+    control. Don't have an opinion about them yet so feel free to
+    remove.
+-->
+    <releaseinfo>
+      Rev: &revision; Date: &date; User: &user;
+    </releaseinfo>
+    <copyright>
+      <year>2005</year>
+      <holder>IBM Corp.</holder>
+    </copyright>
+
+
+<!--
+    Another possibly useless example. These keywords are
+    meta-information that could be used by a document indexing system.
+-->
+    <keywordset>
+      <keyword>&proj;</keyword>
+      <keyword>howto</keyword>
+      <keyword>readme</keyword>
+      <keyword>whitepaper</keyword>
+    </keywordset>
+  </artheader>
+  <abstract>
+    <para>
+      This document attempts to describe and explain the process of
+      creating &proj; documents, both <quote>white papers</quote> and
+      API documents will be discussed.  This document is a work in
+      progress and will evolve as the process develops.
+    </para>
+  </abstract>
+
+  <section id="intro">
+    <title>Introduction</title>
+    <para>
+      The &proj; group has chosen DocBook as the documentation
+      model. This means that our white papers are written in using
+      DocBook <quote>tags</quote> and are currently in
+      <quote>SGML</quote> files but can be easily migrated to
+      <quote>XML</quote> since the same the DocBook Definition is
+      being used.  The process does take some learning, but we are
+      hoping it will be reasonably easy to enable all the features
+      that this model provides and at the same time make authoring as
+      simple as possible.
+    </para>
+  </section>
+  <section id="start">
+    <title>Getting Started</title>
+    <para>
+      Writing and rendering a document using DocBook requires the use
+      of SGML/XML tags to mark regions of text and give them some
+      meaning, as well as a set of tools to render or build and
+      display the final output.
+    </para>
+    <section id="refs">
+      <title>Resource Reference</title>
+      <para>
+	There are several resources for DocBook that should be
+	useful. In particular you should be armed with at least the
+	<ulink url="&dbel.url;">
+	  <citetitle pubwork="section">DocBook Element Reference</citetitle>
+	</ulink> manual which is part of the
+	<ulink url="&db.url;">
+	  <citetitle pubwork="book">DocBook: The Definitive Guide</citetitle>
+<!--
+	  <citation><xref linkend="Walsh99"></citation>
+-->
+	</ulink>.
+	You may also want to consider this
+	<ulink url="http://nis-www.lanl.gov/~rosalia/mydocs/docbook-intro/docbook-intro.html">tutorial</ulink>
+	on getting started by Mark Galassi.
+      </para>
+    </section>
+    <section id="tools">
+      <title>Required Tools</title>
+      <para>
+	The tools necessary to author, build and render documents are
+	as follows:
+	<itemizedlist spacing="compact">
+	  <listitem id="ed">
+	    <para>
+	      A text editor such as:
+	      <simplelist type="inline">
+		<member><ulink url="&emacs.url">Emacs</ulink></member>
+		<member><ulink url="&xemacs.url">XEmacs</ulink></member>
+		<member>
+		  <citerefentry>
+		    <refentrytitle><command>vi</command></refentrytitle>
+		    <manvolnum>1</manvolnum> 
+		  </citerefentry>
+		</member>
+		<member>or even <command>notepad</command>.</member>
+	      </simplelist>
+	    </para>
+	  </listitem>
+	  <listitem>
+	    <para>
+	      A Diagramming package that can translate to
+	      <acronym>EPS</acronym> for <trademark
+	      class="registered">PostScript</trademark> printing and
+	      <acronym>JPEG</acronym> or <acronym>PNG</acronym> for
+	      online publications.  Currently we support both
+	      <simplelist type="inline">
+		<member>
+		  <ulink url="http://www.xfig.org">XFig/TransFig</ulink>
+		</member>
+		<member>
+		  and
+		  <ulink url="http://www.lysator.liu.se/~alla/dia">Dia</ulink>
+		  version 0.88.1 or greater
+		</member>
+	      </simplelist>.
+	    </para>
+	  </listitem>
+	  <listitem>
+	    <para>
+	      A
+	      <citerefentry>
+		<refentrytitle><command>make</command></refentrytitle>
+		<manvolnum>1</manvolnum>
+	      </citerefentry>
+	      program that drives the building process. Though almost
+	      any <command>make</command> program will do, &proj;
+	      officially supports only <ulink url="&make.url;">GNU
+	      Make</ulink>.
+	    </para>
+	  </listitem>
+	  <listitem>
+	    <para>
+	      An implementation of <acronym>DSSSL</acronym>, a style
+	      language to format SGML or XML documents. There are two
+	      popular packages that perform this task:
+	      <simplelist type="inline">
+		<member>
+		  <ulink url="http://openjade.sourceforge.net">OpenJade</ulink>
+		</member>
+		<member>and James Clark's
+		  <ulink url="http://www.jclark.com/jade/">Jade</ulink>
+		</member>
+	      </simplelist>
+	      . We currently use OpenJade version 1.3 or greater but
+	      they seem to be interchangeable.
+	    </para>
+	  </listitem>
+	  <listitem id="pstools">
+	    <para>
+	    If PostScript output is required then both a
+	      <ulink url="http://www.latex-project.org/">LaTex</ulink>
+	      package that is Web2c based such as
+	      <ulink url="http://www.tug.org/teTeX/">teTex</ulink>,
+	      and the
+	      <ulink url="http://jadetex.sourceforge.net/">
+		jadeTex
+	      </ulink>
+	      package are required.
+	    </para>
+	  </listitem>
+	</itemizedlist>
+      </para>
+      <para>
+	Other tools, though not required, can make authoring a white
+	paper that much easier.  The use of the
+	<citerefentry>
+	  <refentrytitle><command>nsgmls</command></refentrytitle>
+	  <manvolnum>1</manvolnum>
+	</citerefentry>
+	command can check your document for errors without actually
+	rendering it.
+      </para>
+      <para>
+	If your editor of choice is Emacs or XEmacs, then you will
+	find that proper installation of the <ulink
+	url="http://www.lysator.liu.se/~lenst/about_psgml">PSGML</ulink>
+	, version 1.2.2 or later, to be invaluable.
+      </para>
+      <section id="rh">
+	<title>
+	  For <trademark class="registered">Red Hat</trademark> Linux
+	</title>
+	<para>
+	  If you have a Red Hat Linux distribution then you can grab
+	  the following <acronym>RPM</acronym> packages and install
+	  them on your machine:
+	  <simplelist>
+	    <member>
+	      <ulink url="&rpmq.url=stylesheets">
+		<application class="software" id="sty">stylesheets-0.13rh-4
+		</application>
+	      </ulink>
+	    </member>
+	    <member>
+	      <ulink url="&rpmq.url=openjade">
+		<application class="software">openjade-1.3-6</application>
+	      </ulink>
+	    </member>
+	    <member>
+	      <ulink url="&rpmq.url=jadetex">
+		<application class="software">jadetex-2.7-4</application>
+	      </ulink>
+	    </member>
+	    <member>
+	      <ulink url="&rpmq.url=tetex">
+		<application class="software">tetex-1.0.6-10</application>
+	      </ulink>
+	      and friends
+	    </member>
+	  </simplelist>
+	  <note>
+	    <para>
+	      All packages except for
+	      <link endterm="sty" linkend="sty"></link>
+	      are installed by default.
+	    </para>
+	  </note>
+
+	  These packages can be easily downloaded from
+	  <ulink url="rpm.url">Rpmfind</ulink> website.
+	</para>
+      </section>
+      <section id="win">
+	<title>For Win32 distribution</title>
+	<warning>
+	  <para>
+	    Though there are several native Win32 pacakges, the cygwin
+	    solution, which is known to work and is described here.
+	  </para>
+	</warning>
+	<note>
+	  <para>
+	    Only rendering to <acronym>HTML</acronym>,
+	    <trademark>MicroSoft Word</trademark> compatible
+	    <acronym>RTF</acronym> and <trademark>Adobe
+	    FrameMaker</trademark> <acronym>MIF</acronym> are known to
+	    work.  The pacakges necessary for rendering
+	    <acronym>PS</acronym> and <acronym>PDF</acronym> require
+	    manual building that is left as an exersize to the reader.
+	  </para>
+	</note>
+	<para>
+	  If you have not discovered cygwin yet them go to <ulink
+	  url="cygwin.url">&cygwin.url;</ulink>.  Click the <ulink
+	  url="cygwin.url/setup.exe">"setup.exe"</ulink> link and this
+	  will install cygwin on you windows box, an exersize for the
+	  reader.
+	</para>
+	<para>
+	  Once you have cygwin installed, run the <ulink
+	  url="cygwin.url/setup.exe">"setup.exe"</ulink> link again
+	  but this time when it asks you to choose the download site
+	  add the following URL
+	  <quote>http://anfaenger.de/cygwin</quote> click
+	  <guibutton>add</guibutton> then <guibutton>next</guibutton>.
+	</para>
+
+	<para>
+	  Now you should then see a new packages list, look for and
+	  select the following packages <emphasis>only if you don't
+	  already have them installed</emphasis>:
+
+	  <itemizedlist spacing="compact">
+	    <listitem>
+	      <para>
+		docbook-dsssl
+	      </para>
+	    </listitem>
+	    <listitem>
+	      <para>
+		docbook-sgml
+	      </para>
+	    </listitem>
+	    <listitem>
+	      <para>
+		docbook-xml
+	      </para>
+	    </listitem>
+	    <listitem>
+	      <para>
+		docbook-xml42
+	      </para>
+	    </listitem>
+	    <listitem>
+	      <para>
+		docbook-xsl
+	      </para>
+	    </listitem>
+	    <listitem>
+	      <para>
+		openjade
+	      </para>
+	    </listitem>
+	    <listitem>
+	      <para>
+		sgml-base
+	      </para>
+	    </listitem>
+	    <listitem>
+	      <para>
+		tei-xml
+	      </para>
+	    </listitem>
+	    <listitem>
+	      <para>
+		tei-xs
+	      </para>
+	    </listitem>
+	    <listitem>
+	      <para>
+		xml-base
+	      </para>
+	    </listitem>
+	    <listitem>
+	      <para>
+		xml
+	      </para>
+	    </listitem>
+	  </itemizedlist>
+	</para>
+	<para>
+	  If you insist on using Win32 here is some more information.
+	  <itemizedlist spacing="compact">
+	    <listitem>
+	      <para>
+		Your choice of editor is up to you, see
+		<link linkend="ed">editors</link> in
+		<xref linkend="tools">.
+	      </para>
+	    </listitem>
+	    <listitem>
+	      <para>
+		GNU Make is available from the
+		<ulink url="http://unxutils.sourceforge.net/">
+		  Native Win32 ports of some GNU utilities
+		</ulink> site. This package is handy because it does
+		not require the
+		<ulink url="http://sourceware.cygnus.com/cygwin/">
+		  cygwin
+		</ulink>
+		tools.
+	      </para>
+	    </listitem>
+	    <listitem>
+	      <para>
+		OpenJade executable is available at the download
+		section of the
+		<ulink url="http://sourceforge.net/projects/openjade/">
+		  sourceforge
+		</ulink>
+		site.
+	      </para>
+	    </listitem>
+	    <listitem>
+	      <para>
+		DocBook style sheets are available at the download
+		section of the
+		<ulink url="http://sourceforge.net/projects/docbook/">
+		  sourceforge
+		</ulink>
+		site.
+	      </para>
+	    </listitem>
+	  </itemizedlist>
+	</para>
+	<para>
+	  It should also be possible to install the
+	  <link linkend="pstools">jadeTex</link>
+	  package on top of an installed LaTex distribution.
+	</para>
+      </section>
+    </section>
+  </section>
+  <section id="build">
+    <title>Building the White Papers</title>
+    <para>
+      All documents can be built in this directory by using the
+      <command>make</command> command. The following targets are supported:
+      <itemizedlist spacing="compact">
+	<listitem>
+	  <para>
+	    <option>all</option> or <option>default</option>: build
+	    all known documents rendering only <acronym>HTML</acronym>.
+	  </para>
+	</listitem>
+	<listitem>
+	  <para>
+	    <option>html</option>: build all <acronym>HTML</acronym>
+	    rederings of the documents.
+	  </para>
+	</listitem>
+	<listitem>
+	  <para>
+	    <option>ps</option>: build only the PostScript output of
+	    the <envar>DOCSRCS</envar> files.
+	  </para>
+	</listitem>
+	<listitem>
+	  <para>
+	    <option><replaceable>filename</replaceable>.<optional>html|rtf|mif|ps|pdf</optional></option>:
+	    build only that single document.
+	  </para>
+	</listitem>
+	<listitem>
+	  <para>
+	    <option><replaceable>filename</replaceable></option>:
+	    build only the <acronym>HTML</acronym> output of the document that
+	    <filename><replaceable>filename</replaceable>.sgml</filename>
+	    represents.
+	  </para>
+	</listitem>
+      </itemizedlist>
+    </para>
+  </section>
+
+  <section id="new">
+    <title>Adding a New White Paper</title>
+    <para>
+      Adding a new white paper to this directory is rather simple in
+      comparison to authoring the actual paper. Just do the following:
+      <orderedlist numeration="arabic" spacing="compact">
+	<listitem>
+	  <para>
+	    Copy another similar document you wish to create, for
+	    example, use this file <filename>ReadME.sgml</filename> to
+	    create a
+	    <filename><replaceable>whitepaper</replaceable>.sgml</filename>.
+	  </para>
+	</listitem>
+	<listitem id="start.add">
+	  <para>
+	    Edit file to taste.
+	  </para>
+	</listitem>
+	<listitem>
+	  <para>
+	    Build document periodically by entering
+	    <userinput>
+	      <command>make <option><replaceable>whitepaper</replaceable></option></command></userinput>.
+
+	    This will build both <acronym>HTML</acronym> and
+	    PostScript.
+	  </para>
+	</listitem>
+	<listitem id="end.add">
+	  <para>
+	    View
+	    <filename><replaceable>whitepaper</replaceable>.html</filename>
+	    with your favorite web browser or print or view, with
+	    <ulink url="ghostview">GhostView</ulink>,
+	    <filename><replaceable>whitepaper</replaceable>.ps</filename>.
+	  </para>
+	</listitem>
+	<listitem>
+	  <para>
+	    Repeat steps
+	    <xref linkend="start.add"> to
+	    <xref linkend="end.add"> until finished.
+	  </para>
+	</listitem>
+      </orderedlist>
+    </para>
+  </section>
+<!--
+No bib yet
+  &bib.sgml;
+-->
+</article>
+
+<!--
+Local Variables:
+sgml-validate-command: "nsgmls -s %s %s"
+gml-indent-data: t
+sgml-insert-missing-element-comment: t
+End:
+-->
+<!--
+  LocalWords:
+ -->
+

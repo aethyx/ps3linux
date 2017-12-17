@@ -1,0 +1,90 @@
+#
+# $Id$
+#
+
+A Multi-Platform, Multi-Purpose Research Hypervisor
+
+1. Maintainers
+
+   Current work on Research Hypervisor is targets two Instruction Set
+   Architectures (ISA). The core maintainers consist of the
+   individuals responsible for a particular ISA. Those individuals are
+   currently:
+
+    1. Overall and PowerPC. Jimi Xenidis <jimix@watson.ibm.com>.
+    2. Intel and AMD Architecture (x86). Leendert Van Doorn, 
+       <leendert@us.ibm.com>.
+     _________________________________________________________________
+
+2. What is the Research Hypervisor?
+
+   Virtual machines have been around for decades, creating an environment
+   by which several Operating Systems can coexist on a single machine
+   while maintain the security and isolation of a multiple machine
+   scenario. Much of the technology has been pioneered by IBM(TM) in our
+   zSeries(TM) and more recently in our pSeries(TM) and iSeries(TM)
+   offerings. Normally the domain of "Big Iron" and large data centers,
+   Hypervisors have enjoyed a recent resurgence in interest due to the
+   availability of powerful commodity hardware and the vast amount of
+   operating system research made possible by the recent open source
+   movement.
+
+   The Research Hypervisor Project is a software base designed
+   specifically to perform and support Hypervisor Research and push
+   the boundaries of all aspects of virtualizing a machine. Different
+   ISAs have different degrees of maturity, but our commitment to
+   broad support, rapid progress and friendly competition have created
+   an energetic environment and some pretty cool results.
+     _________________________________________________________________
+
+3. Project goals
+
+    1. Multi-Platform. The Research Hypervisor Project currently
+       supports PowerPC and x86 processors and targets various
+       processor implementations that may or may not have Hypervisor
+       capabilities designed into the architecture.
+
+    2. Multi-Purpose. The Project is designed to be feature rich in
+       that a specific build can support varying degrees of system
+       virtualization, in terms of IO partitioning, IO virtualization,
+       Multi-processor Multi-threaded virtualization, Security, RAS,
+       migration, and more.
+
+    3. Compact Size and Modularity. The size and function of the core
+       Hypervisor in the Research Hypervisor is a major concern to the
+       project leaders. We are committed to creating a modular design
+       that will allow for new features to be added to the core
+       functionality in order to preserve Hypervisor integrity and
+       allow for independent innovation and research.
+
+    4. More to come. ...
+     _________________________________________________________________
+
+4. Getting Started
+
+   See the INSTALL file in this directory, there is also plenty of
+   useful information in the ./docs directory.
+
+5. Check it out!
+
+   We invite all of the Open Source Comminity to try the Research
+   Hypervisor and discuss its design and implimentation. Please keep
+   an eye out for our comming webpage at:
+     http://www.research.ibm.com/Hypervisor
+
+   Other Resources:
+
+     * Hacker's Guide. Can be build like all other documentation, a
+       recent snap shot can be found in:
+          docs/00HackersGuide.html
+
+     * API Document. Is in the fila stages of review and will be
+       released shortly
+
+     * IRC on irc.freenode.net, channel name is #rhype. For those
+       interested in a more "free form" discussion.
+
+     * Mailing lists. Are being created as we speak.. stay tuned!
+
+
+Jimi Xenidis <jimix@watson.ibm.com>

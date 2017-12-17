@@ -1,0 +1,9 @@
+hype
+hype.nm
+gen.[hs]
+ppc_defs.h
+hyp_test
+*.dis
+*.swp
+Makefile
+.deps

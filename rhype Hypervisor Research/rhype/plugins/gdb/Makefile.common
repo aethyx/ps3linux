@@ -1,0 +1,68 @@
+# -*-Makefile-*-
+# Copyright (C) 2005 Jimi Xenidis <jimix@watson.ibm.com>, IBM Corporation
+#
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 2 of the License, or
+# (at your option) any later version.
+# 
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+# 
+# You should have received a copy of the GNU General Public License
+# along with this program; if not, write to the Free Software
+# Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307 USA
+#
+# $Id$
+#
+#
+#   make variables set by configure
+#
+
+GDB_OBJECTS +=	test_gdbstub.o \
+		test_hcall_console.o \
+		$(top_builddir)/lib/$(ISA)/$(CPU_GRP)/gdbstub.o \
+		$(top_builddir)/lib/$(ISA)/$(CPU_GRP)/gdbstub_isa.o \
+
+all: all_targets
+
+OBJECTS = $(GDB_OBJECTS)
+
+include $(top_builddir)/Makefile.conf
+
+ifneq ($(ALT_CPU_GRP),)
+CPU_GRP=$(ALT_CPU_GRP)
+endif
+
+HOST_PRE_CPPDIRS += -I$(srcdir) -I$(srcdir)/.. -I$(srcdir)/../.. 
+all_targets: $(ALL_TARGETS)
+
+# all targets depend on 
+HOST_LDLIBS += -lhype -lgcc 
+gdb_image.dbg: HOST_LDFLAGS += -Wl,--omagic,-Ttext,$(GDB_LTEXT)
+
+# force $(HEAD) to be linked first
+HLIB=$(top_builddir)/lib/$(ISA)/$(CPU_GRP)/libhype.a \
+	$(top_builddir)/lib/$(ISA)/$(CPU_GRP)/libofd.a
+
+gdb_image.dbg: $(GDB_OBJECTS) $(HLIB)
+	$($(CUR_TOOL)_LINK.o) $(GDB_OBJECTS) $(HOST_LDLIBS) -o $@
+
+CLEAN_FILES += head.o gdb_image gdb_image.dbg
+
+%: %.dbg
+	$($(CUR_TOOL)_OBJCOPY) --strip-unneeded $< $@
+
+OLD_SYM=$(<:%=%)
+NEW_SYM=$(@:%.o=%)
+
+
+OBJ_IMAGE_FLAGS = --input-target=binary \
+		  --output-target=$(HOST_BFDNAME) \
+		  --binary-architecture=$(HOST_BFDARCH) \
+		  --redefine-sym=_binary_$(OLD_SYM)_size=_$(NEW_SYM)_size \
+		  --redefine-sym=_binary_$(OLD_SYM)_start=_$(NEW_SYM)_start \
+		  --redefine-sym=_binary_$(OLD_SYM)_end=_$(NEW_SYM)_end	
+

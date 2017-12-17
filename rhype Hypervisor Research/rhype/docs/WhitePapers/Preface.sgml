@@ -1,0 +1,79 @@
+<!--
+  (C) Copyright IBM Corp. 2005.
+  All Rights Reserved
+
+  $Id$
+-->
+
+<preface>
+  <title>Preface</title>
+  <section>
+    <title>Who Should Read This Manual</title>
+    <para>
+      This manual is intended for designers who plan to develop
+      software that runs in a Logical Partition as presented by the
+      Research Hypervisor.
+    </para>
+  </section>
+  <section>
+    <title>User Responsibilities</title>
+    <para>
+      The author is responsible for the content of this
+      document. Only the author is authorized to make changes to
+      this document.
+    </para>
+    <para>
+      It is the responsibility of the user of this document to verify
+      that the copy being used is the current version. This can be
+      done by comparing the date and version level with that of the
+      latest released document. See <xref linkend="PreDocControl"> for
+      information on how to obtain the latest version of this
+      document. It is also the responsibility of the user to dispose
+      of any down level versions of this document.
+    </para>
+    <para>
+      It is the responsibility of the Document Owner to notify those
+      on the distribution list of the availability of a new
+      version. This notification will be done via E-mail. The
+      document owner can add persons to the distribution list at
+      will.
+    </para>
+    <para>
+      Please <emphasis role="strong">report any deviations</emphasis>
+      from these procedures to the document owner identified in
+      <xref linkend="PreDocOwner">. For additional information, see
+      <xref linkend="PreDocControl">.
+    </para>
+  </section>
+  <section id="predoccontrol" xreflabel="Document Control">
+    <title>Document Control</title>
+    <para>
+    </para>
+    <section id="PreDocOwner" xreflabel="Document Owner">
+      <title>Document Editor & Project Lead</title>
+      <para>
+	<address>
+	  Jimi Xenidis <email>jimix@watson.ibm.com</email>
+	</address>
+      </para>
+    </section>
+    <section>
+      <title>Additional Contacts</title>
+      <para>
+	<address>
+	  Orran Krieger <email>okrieg@us.ibm.com</email>
+	</address>
+	<address>
+	  Leendert Van Doorn <email>leendert@us.ibm.com</email>
+	</address>
+      </para>
+    </section>
+  </section>
+</preface>
+
+
+<!--
+Local variables:
+sgml-parent-document: ("./ReadMe.sgml" "book" "preface")
+End:
+-->

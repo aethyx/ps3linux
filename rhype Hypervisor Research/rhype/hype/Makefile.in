@@ -1,0 +1,205 @@
+#
+# Copyright (C) 2005 Jimi Xenidis <jimix@watson.ibm.com>, IBM Corporation
+#
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 2 of the License, or
+# (at your option) any later version.
+# 
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+# 
+# You should have received a copy of the GNU General Public License
+# along with this program; if not, write to the Free Software
+# Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307 USA
+#
+# $Id$
+#
+
+top_srcdir = @top_srcdir@
+srcdir = @srcdir@
+VPATH = @srcdir@/@ISA@/@CPU_GRP@/@CPU_CORE@:@srcdir@/@ISA@/@CPU_GRP@:@srcdir@/@ISA@:@srcdir@
+top_builddir = ..
+top_subdir = @TOP_SUBDIR@
+
+
+TARGETS = hype controller.bin
+
+# order here is important
+# please keep start.o first for the multiboot header on x86
+HEAD_OBJECTS = start.o
+HEAD = head.o
+
+OBJECTS =	arch_os.o \
+		assprint.o \
+		boot_stack.o \
+		breakpoint.o \
+		create_msgq.o \
+		crq.o \
+		debug_ctl.o \
+		exceptions.o \
+		func_trace.o \
+		h_accept_logical.o \
+		h_add_logical_lan_buffer.o \
+		h_change_logical_lan_mac.o \
+		h_copy_rdma.o \
+		h_create_partition.o \
+		h_debug.o \
+		h_destroy.o \
+		h_eoi.o \
+		h_eic_config.o \
+		h_free_crq.o \
+		h_free_logical_lan.o \
+		h_free_logical_lan_buffer.o \
+		h_free_vterm.o \
+		h_get_lpid.o \
+		h_get_tce.o \
+		h_get_term_char.o \
+		h_grant_logical.o \
+		h_interrupt.o \
+		h_invalid.o \
+		h_ipi.o	\
+		h_ipoll.o \
+		h_lpar_info.o \
+		h_multicast_ctrl.o \
+		h_page_init.o \
+		h_put_term_char.o \
+		h_put_tce.o \
+		h_rescind_logical.o \
+		h_reg_crq.o \
+		h_register_logical_lan.o \
+		h_register_vterm.o \
+		h_send_async.o \
+		h_send_crq.o \
+		h_send_logical_lan.o \
+		h_set_sched_params.o	\
+		h_start.o \
+		h_stuff_tce.o \
+		h_resource_transfer.o \
+		h_vio_ctl.o \
+		h_vio_signal.o \
+		h_vterm_partner_info.o \
+		h_yield.o \
+		h_xirr.o \
+		hba.o \
+		hcall_vec.o	\
+		imemcpy.o \
+		init.o	\
+		io.o \
+		ipc.o	\
+		liob.o \
+		llan.o \
+		lpidtag.o \
+		mem_resource.o \
+		os.o	\
+		phys_mem.o \
+		pmm.o	\
+		psm.o \
+		pmm_arch.o \
+		preempt.o \
+		rcu.o \
+		resource.o \
+		sched.o	\
+		sched_arch.o \
+		stack.o	\
+		tce.o \
+		timer.o \
+		vio.o \
+		vm.o \
+		vterm.o \
+		vtty.o \
+		xir.o
+
+OBJECTS += @HOST_BUS_ADAPTER@
+OBJECTS += @EXTERNAL_INTERRUPT_CONTROLLER@
+OBJECTS += @VGA_CONSOLE@
+OBJECTS += @BOOT_ENV@
+OBJECTS += @IO_CHANNELS@
+
+CUSTOM_HW= @CUSTOM_HW@
+
+include $(top_builddir)/Makefile.conf
+
+CUR_TOOL=HOST
+
+HOST_CPPDEFS += -DLTEXT=$(LTEXT)
+HOST_LIBS = $(HOST_PRE_LIBS) -lhype -lgcc
+
+ifneq ($(top_subdir),)
+# yeah, I hate if's but this path is resolvable by accident
+include $(top_srcdir)/$(top_subdir)/hype/Makefile.isa
+endif
+-include $(srcdir)/$(ISA)/Makefile.isa # add to OBJECTS
+
+
+IO_XLATE= @IO_XLATE@
+OBJECTS+= $(IO_XLATE)
+
+
+all: $(TARGETS)
+
+HOST_PRE_CPPDIRS += -I@srcdir@/$(ISA)/$(CPU_GRP)/$(CPU_CORE)
+HOST_PRE_CPPDIRS += -I@srcdir@/$(ISA)/$(CPU_GRP)
+HOST_PRE_CPPDIRS += -I$(srcdir)/$(ISA) -I$(srcdir)
+
+# Let the env LOADIMAGE override this
+ifndef LOADIMAGE
+LOADIMAGE=@LOADIMAGE@
+endif
+
+ifeq ($(ENABLE_GDB), yes)
+OBJECTS += gdbstub.o
+endif
+
+#strip out the elf header
+controller.bin: $(LOADIMAGE)
+	$(HOST_OBJCOPY) --output-target=binary $< $@
+
+OBJ_IMAGE_FLAGS = \
+	--input-target=binary \
+	--output-target=$(HOST_BFDNAME) \
+	--binary-architecture=$(HOST_BFDARCH) \
+	--redefine-sym=_binary_controller_bin_start=_controller_start \
+	--redefine-sym=_binary_controller_bin_size=_controller_size \
+	--redefine-sym=_binary_controller_bin_end=_controller_end
+
+controller.o:  controller.bin
+	$(HOST_OBJCOPY) $(OBJ_IMAGE_FLAGS) $< $@
+
+$(HEAD): $(HEAD_OBJECTS)
+	$(HOST_LINK.o) -r $^ -o $@
+
+hype.o: $(HEAD) $(OBJECTS)
+	$(HOST_LINK.o) -r $^ -o $@
+
+# Make in all one elf segment.
+HOBJS = hype.o $(ISA_CONTROLLER)
+
+libhype=../lib/$(ISA)/$(CPU_GRP)/libhype.a
+
+build_time.c: FORCE
+	echo "char build_time[]=\"`date`\";" > $@
+FORCE:
+
+HOBJS += build_time.o
+INSTALL_OBJS += build_time.o
+
+hype: HOST_LDFLAGS += -Wl,--omagic,-Ttext,$(LTEXT)
+hype: $(HOBJS) $(libhype)
+	$(HOST_LINK.o) $(HOBJS) $(HOST_LIBS) -o $@
+
+$(OBJECTS): asm_defs.h
+
+install: hype.o $(libhype) $(INSTALL_OBJS)
+	@$(NORMAL_INSTALL)
+	$(mkinstalldirs) $(DESTDIR)$(datadir)
+	@list='$^'; for p in $$list; do \
+	  if test -f $$p; then \
+	     $(INSTALL_PROGRAM) $$p $(DESTDIR)$(datadir)/$$(basename $$p); \
+	  else :; fi; \
+	done
+
+CLEAN_FILES += $(HEAD_OBJECTS) $(HEAD) $(HOBJS) $(TARGETS) controller.bin
+CLEAN_FILES += build_time.c build_time.o

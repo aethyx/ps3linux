@@ -1,0 +1,561 @@
+<!--
+  (C) Copyright IBM Corp. 2005.
+  All Rights Reserved
+
+  $Id$
+-->
+<!DOCTYPE article PUBLIC "-//OASIS//DTD DocBook V3.1//EN" [
+
+<!-- To disable review comments replace INCLUDE with IGNORE -->
+<!ENTITY % review "INCLUDE" >
+
+<!-- CVS gives us these -->
+<!ENTITY file "$Source: L0.sgml">
+<!ENTITY user "$Author$">
+<!ENTITY date "$Date$">
+<!ENTITY revision "$Revision$">
+
+<!-- I'm always using these reference so define short-hands here. -->
+<!ENTITY hcall "<citerefentry><refentrytitle><function>hcall</function></refentrytitle><manvolnum></manvolnum></citerefentry>">
+<!ENTITY HV "<acronym>HV</acronym>">
+<!ENTITY IOMMU "<acronym>IOMMU</acronym>">
+<!ENTITY LPAR "<acronym>LPAR</acronym>">
+<!ENTITY ISA "<acronym>ISA</acronym>">
+
+]>
+
+<article status="draft" lang="en">
+  <artheader>
+    <title>Research Hypervisor Principles</title>
+
+    <releaseinfo>
+      Draft Version (0.20)
+    </releaseinfo>
+
+    <corpauthor>
+      <trademark>IBM</trademark> Research Hypervisor Group
+    </corpauthor>
+
+    <copyright>
+      <year>2005</year>
+      <holder>International Business Machines Corporation</holder>
+    </copyright>
+
+    <revhistory>
+      <revision>
+	<revnumber>&revision;</revnumber>
+	<date>&date;</date>
+      </revision>
+    </revhistory>
+  </artheader>
+
+  <abstract>
+    <para>
+      Hypervisors allow different operating systems or different
+      instances of a single operating system to run on the same
+      hardware at the same time.  In this sense, Hypervisors resemble
+      virtual machine systems such as VMWare. However, recent
+      developments in Hypervisors have shown that performance need not
+      be compromised as it is with VM systems[XEN].  An OS, and its
+      applications, running on top of a Hypervisor, and its
+      applications, can run at the native speed of the machine; in
+      this steady state, the OS need never use Hypervisor services.
+    </para>
+  </abstract>
+  <section>
+    <title>Introduction</title>
+    <para>
+      The Research Hypervisor project creates a virtual machine
+      environment that is a <quote>Logical</quote> representation of a
+      machine that has been <quote>Partitioned</quote> from the
+      original base machine.  We call this environment the Logical
+      Partition (&LPAR;).
+
+      <footnote>
+	<para>
+	  In Xen parlance an &LPAR; is called a <quote>Domain</quote>.
+	</para>
+      </footnote>
+    </para>
+    <para>
+      The &LPAR; is different from a pure virtual machine in that it
+      uses <quote>para-virtualization</quote> techniques first
+      described by the Denali Project[DEN].
+
+      <comment>
+	Introduce the "types" of hypervisors somewhere and don't
+	forget the ref.
+      </comment> 
+
+      Para-virtualization requires the software that runs in the
+      &LPAR; to be aware that it is <emphasis>not</emphasis> running
+      on <quote>bare metal</quote>.  This &LPAR;
+      <quote>awarness</quote> comes from the use of software
+      abstractions to deal with the loss of access to certain specific
+      machine resources that are normally the domain of the software.
+      These resources are abstracted by a series of interfaces to the
+      Hypervisor (&HV;), known as Hypervisor Calls (or &hcall;s).
+    </para>
+    <para>
+      The Hypervisor is primarily concerned with the management of
+      memory, processors, interrupts and some simple transports.  The
+      heart of the Research Hypervisor design is to keep the
+      <emphasis>core</emphasis> &HV; restricted to these items and
+      keep the code as small and simple as possible.  All other
+      services are the domain of surrounding
+      <emphasis>cooperative</emphasis> &LPAR;s. Although these
+      services can be used to create an &LPAR;ed environment, they are
+      beyond the scope of the &HV; itself.
+    </para>
+    <para>
+      In the following sections we will discuss our history, specific
+      goals, design decisions, how logical abstractions were created
+      in the &HV; to facilitate an &LPAR; environment and, where
+      necessary, will also discuss where the two currently supported
+      ISAs differ.
+    </para>
+    <note>
+      <para>
+	This document is a companion to the following documents:
+	<variablelist>
+	  <varlistentry>
+	    <term>
+	      <citation>POWER Architecture Platform Reference</citation>
+	    </term>
+	    <listitem>
+	      <para>
+		The (<acronym>PAPR</acronym>) document available from
+		<trademark>IBM</trademark> from: [URL]  It describes
+		the environemnt that an general purpose operating
+		system will run in includeing bootstrap, runtime and
+		shutdown.  Of particular interest should be the
+		description of the &LPAR; option.
+	      </para>
+	    </listitem>
+	  </varlistentry>
+	  <varlistentry>
+	    <term>
+	      <citation>
+		The Research Hypervisor &LPAR; Extentention
+	      </citation>
+	    </term>
+	    <listitem>
+	      <para>
+		This document describes the additional &HV; calls
+		supported by the research hypervisor in order to
+		manage and creare &LPAR;s, available with this document.
+	      </para>
+	    </listitem>
+	  </varlistentry>
+	  <varlistentry>
+	    <term>
+	      <citation>
+		The Reseach Hypervisor Cell Processor Extention.
+	      </citation>
+	    </term>
+	    <listitem>
+	      <para>
+		This document provides the description of the
+		additional &HV; interfaces necessary to access the
+		features of the Cell Processor Architecture, available
+		from the Cell Architecure Library.
+		<footnote>
+		  <para>
+		    If you have to ask, you'll never know [cite].
+		  </para>
+		</footnote>
+	      </para>
+	    </listitem>
+	  </varlistentry>
+	</variablelist>
+      </para>
+    </note>
+  </section>
+  <section>
+    <title>History</title>
+    <para>
+      Machine abstractions have been around since the early data
+      processing years, modern operating systems introduce a simpler
+      machine abstraction for user applications centralizing
+      complexity, micro/exo-kernel attempt to simplify the resource
+      management by distributing the complexity while still
+      maintaining a simple application environment and new projects
+      emerge with approaches differing slightly, this project is another.
+    </para>
+    <para>
+      IBM System 390 introduced an architecture that enabled machine
+      virtualization by introducing a new processor mode that allowed
+      access to privileged resources to be efficiently programmed
+      using micro and milli-code instruction set.  In the last few
+      years IBM has extended the PowerPC architecture to introduce a
+      new processor mode that had exclusive access to specific
+      processor resources yet retained the same programming
+      environment and instruction set.  Although not as efficient as
+      executing processor milli-code instructions it is uniquely
+      tailored for a para-virtualized environment to be created.
+    </para>
+    <para>
+      The IBM PHYP Hypervisor product, which was released with the
+      recent Squadron pSeries machines[Ref], is the first software
+      &HV; to take advantage of this new processor mode.  It is
+      capable of running several heterogeneous operating systems at
+      once, and provides each &LPAR; with an amazing array of RAS,
+      high end IO, and server consolidation benefits [Ref].  Other
+      processor manufacturers, in particular Intel and AMD, are also
+      designing (or have designed) architectural enhancements that
+      introduce a similar processor mode to their processors.
+      Regardless of whether or not this new processor mode exists,
+      this document shall refer to the processor mode that the &HV;
+      executes in as <quote>Hypervisor Mode</quote>.
+    </para>
+    <para>
+      This project began as an open source reference implementation of
+      the PHYP para-virtualization interfaces as defined by the Power
+      Architecture Platform Requirements (<acronym>PAPR</acronym>) in
+      order to explore new processor and architecture innovations.  It
+      is evolving in to a &HV; core that is capable is creating a
+      common &LPAR; environment on a multitude of different
+      architectures with and without explicit &HV; support, the ia32
+      architecture being the most robust example of this ability.
+    </para>
+  </section>
+  <section>
+    <title>Goals</title>
+    <para>
+      The creation of an &LPAR; environment should go beyond the
+      simple virtualization of the underlying hardware, but instead
+      should create an environment that presents a simpler machine by
+      which software (including OSes) can take, customize and easily
+      take advantage of architectural enhancements at the processor
+      level.  With this in mind, and the PARP as a staring point we
+      set out to explore:
+      <itemizedlist>
+	<listitem>
+	  <para>
+	    Support Open Source OSes like Linux, the BSDs, Darwin,
+	    etc.. and run on all machines they run.
+	  </para>
+	</listitem>
+	<listitem>
+	  <para>
+	    Security, by providing complete isolation, attestation,  as well as
+	    <acronym>TPM</acronym>[ref] services completely in software.
+	  </para>
+	</listitem>
+	<listitem>
+	  <para>
+	    Small, auditable, and configurable source space.
+	  </para>
+	</listitem>
+	<listitem>
+	  <para>
+	    Explore architectural and processor enhancements.
+	  </para>
+	</listitem>
+	<listitem>
+	  <para>
+	    Small <quote>one off</quote> &LPAR;s that performs
+	    specific isolated tasks.
+	  </para>
+	</listitem>
+	<listitem>
+	  <para>
+	    Library OS creating an even simpler C Library/POSIX like &LPAR;.
+	  </para>
+	</listitem>
+	<listitem>
+	  <para>
+	    Create Real Time &LPAR; environment.
+	  </para>
+	</listitem>
+	<listitem>
+	  <para>
+	    Full virtualization from within an &LPAR;
+	  </para>
+	</listitem>
+	<listitem>
+	  <para>
+	    &LPAR; managment.
+	  </para>
+	</listitem>
+	<listitem>
+	  <para>
+	    New logical transports and inter-&LPAR; services.
+	  </para>
+	</listitem>
+      </itemizedlist>
+
+      Some of these goals have been explored extensively, others are
+      just beginning, but it is all still being researched for
+      improvement.
+    </para>
+  </section>
+  <section>
+    <title>Hypervisor Principles</title>
+    <subtitle>The Logical Model</subtitle>
+    <para>
+      It has been said that any problem becomes easier if you add a
+      layer of abstraction [cite].  The creation of a set of logical
+      resources for an &LPAR; represents that abstraction.  A quick
+      overview of the benefits are as follows.
+    </para>
+    <section>
+      <title>The &hcall;</title>
+      <para>
+	The mechanism by which an &LPAR; submits a request to the &HV;
+	is generally &ISA; specific, but the calling semantics are
+	similar to those use by Unix System Calls.  They normally
+	require the processor to suffer a trap and an address space
+	change while the processor enters the &HV; mode.  System calls
+	used by most operating system are generally targeted to a C
+	library and/or <acronym>POSIX</acronym> symantics where
+	arbitrary buffers pointers are passed into the kernel and some
+	cross address space copying is required to support these
+	semantics.  &HV;s take a more shared memory centric view and
+	reserve the &hcall; fo ruse a s a control channel for small
+	messages that can usually fit in parameter registers reserved
+	by the ABI and, in the pathological case with the IA32, use of
+	the callers stack.
+      </para>
+    </section>
+    <section>
+      <title>Memory</title>
+      <para>
+	The software running on an &LPAR; is assigned
+	<quote>chunks</quote> of contiguous memory that become
+	accessible to the LPAR when it requests that the &HV; maps a
+	virtual page to a logical page.  A collection of these chunks
+	create a logical address space which the software can use to
+	describe a virtual to logical mapping.  The &HV; then takes
+	this <quote>tuple</quote> of &LPAR; identifier and logical
+	page identifier, resolves the actual physical page identifier,
+	and finally inserts the translation into the page table that
+	the &HV; controls.
+      </para>
+      <para>
+	Partitioning physical memory into these large chunks
+	simplifies and reduces the meta-data necessary for the &HV; to
+	maintain the access, translation, and (in particular cases)
+	reverse translation information that is required to manage
+	several logical address spaces.
+      </para>
+      <para>
+	The logical address space also has a <acronym>RAS</acronym>
+	benefit, such that faulty memory banks can be identified and
+	easily vacated so that the memory can be removed and/or
+	replaced without the software running on the &LPAR; having any
+	knowledge.
+      </para>
+      <section>
+	<title>PowerPC Memory</title>
+	<para>
+	  The PowerPC memory model is ...
+
+	  ...  The translation from <quote>effective</quote> to
+	  <quote>virtual</quote> remains the domain ot the &LPAR;;
+	  however, the transaltion from the <quote>virtual</quote> to
+	  the physical is controlled by the &HV;, and therefore, the
+	  hashed page table must be abstracted form the &LPAR;.
+	</para>
+	<note>
+	  <para>
+	    In order for the the &LPAR; to track the
+	    <acronym>HTAB</acronym> entries, the &HV; and the &LPAR;
+	    must both agree the geometry.  The log number of bytes in
+	    the <acronym>HTAB</acronym> is the second word of the
+	    <filename>ibm,pft_size</filename> property of each
+	    <filename class="directory">cpu</filename> node.
+	  </para>
+	</note>
+      </section>
+    </section>
+    <section>
+      <title>Processors</title>
+      <para>
+	Processors are usually time shared by the &HV;.  Each instance
+	of a processor in an &LPAR; is a <quote>logical</quote> in
+	such a way that there can be more logical processors than
+	there are physical processors.  There is also the ability to
+	take a processor thread, which may not have full processor
+	semantics, and represent it as a full logical processor.
+      </para>
+      <para>
+	Synergistic cores (<acronym>SPE</acronym>s), like those found
+	in the Cell architecture can be arbitrarily assigned and
+	isolated to different &LPAR;s.  This allows for the workload
+	assigned to an <acronym>SPE</acronym> to continue independent
+	of which &LPAR; is currently executing on the host processor.
+      </para>
+    </section>
+    <section>
+      <title>Interrupt Controler</title>
+      <para>
+	As different interrupt sources, such as processors and
+	devices) are assigned to different &LPAR;s it is important to
+	be able to reflect the insantiated interrupt to the
+	appropriate &LPAR;.  This is done by virtualizing the external
+	interrupt controllers (<acronym>XIRR</acronym>).
+      </para>
+    </section>
+    <section>
+      <title>Physcial Devices</title>
+      <para>
+	The <emphasis>direct access</emphasis> to a physical device
+	from an &LPAR; is simply arranging for the device to be
+	mappable by that &LPAR;.  Once that mapping and the necessary
+	interrupt routing is established, the native driver is capable
+	of controlling the device naturally.
+      </para>
+      <para>
+	This access is usually done from a <quote>trusted
+	&LPAR;</quote> that is known not to program the device in a
+	malicious manner.
+	<warning>
+	  <para>
+	    One could imagine that such and &LPAR; could program an
+	    device to DMA to arbitrary parts of physical memory therby
+	    effectively destroying other &LPAR;s or the &HV; itself.
+	  </para>
+	</warning>
+
+	However, some machines are equiped with I/O translation
+	mechanism (&IOMMU;) that are capable
+	instantiating a unique I/O address space that can be
+	partitioned and/or taged in such a way that each device can
+	access only a specific set of physical address ranges.
+      </para>
+    </section>
+    <section>
+      <title>&IOMMU;s</title>
+      <para>
+	&IOMMU;s come in several forms, some work on a the
+	<quote>slot</quote> level, and some work on the bus level,
+	some <quote>self virtualizing</quote> devices had I/O MMUs on
+	the adapter.  Each present isolation at a different
+	granualarity.
+      </para>
+      <para>
+	For every &IOMMU; on the system the &HV; instantiates a unique
+	I/O address space.  For convienience this address space starts
+	at address 0 and can be of arbitrary size (usually selected
+	for the performace characteristics of the machine).
+      </para>
+      <para>
+	The I/O address space is the paritioned such that a contiguous
+	range of the I/O assress space is assigned to every uniquely
+	identifiable device, this usually is some slot identfier on
+	that bus.  For example, there is a I/O bus available for the
+	Cell processor architecture that contains several adapter
+	directly attached to the bus.  Each adapter has its own unique
+	identifier, and thus can be paritioned and assigned to
+	individual &LPAR;s.
+	<note>
+	  <para>
+	    Some buses (usually called a <quote>south bridge</quote>
+	    or <quote>host bridge</quote>) are proprietary busses that
+	    contain adapters to industry standard buses like
+	    <acronym>PCI or PCI-X</acronym>.  It may be the case that
+	    the standard bus does not uniquely identify each
+	    <quote>slot</quote> on that bus and therefore that
+	    standard bus is <emphasis>not</emphasis> partitionable.
+	  </para>
+	</note>
+      </para>
+      <para>
+	Each I/O address space parition is described by the
+	<filename>ibm,my-dma-window</filename> property in the done of
+	the device.  The &LPAR; is able to use addresses in the
+	<quote>window</quote> to program DMA transactions with the
+	device and use the
+	<constant>H_TCE_<replaceable>*</replaceable></constant> &HV;
+	calls to create translations from the window address to the
+	&LPAR; logical address.
+      </para>
+      <warning>
+	<para>
+	  Programming a device to DMA byond its DMA window will
+	  usually result in the device being taken off line and reused
+	  by the system.
+	</para>
+      </warning>
+    </section>
+    <section>
+      <title>Logcial Devices</title>
+      <para>
+	Logical devices are introduced to allow single devices to be
+	shared by multiple &LPAR;s, but an addition benefit is the
+	drastic reduction of the number of devices each &LPAR; must
+	support.
+      </para>
+      <note>
+	<para>
+	  The virualization of devices are not specifically a function
+	  of the &HV; but rather an <quote>inter-partition</quote>
+	  service that the &HV; enables.
+	</para>
+      </note>
+      <section>
+	<title>Console</title>
+	<para>
+	  By virtualizing the console (VTTYs), there is no need for
+	  low level drivers to directly access a Graphic Console or a
+	  Serial UART on the machine.  This enables early boot and low
+	  level debugging/panic services to be drastically simplified.
+	</para>
+      </section>
+      <section>
+	<title>Network</title>
+	<para>
+	  By virtualizing the network (VETH/ILLAN), can benefit from a
+	  shared memory transport effectivly presenting the
+	  <acronym>NIC</acronym> with an arbitrary sized
+	  <acronym>MTU</acronym>. More than one can be selected so
+	  that the most efficient size can be chosen per payload.  For
+	  network communication that is destined out of box, the
+	  &LPAR; actually operating the physical
+	  <acronym>NIC</acronym> can use a packet bridge,
+	  <acronym>IP</acronym> forwarding, or Network Address
+	  Transaltion technology forward the communication to the
+	  ouside world.
+	</para>
+      </section>
+      <section>
+	<title>Block Devices</title>
+	<para>
+	  Block devices, such as Disks, CD-ROM, DVD, or even disk
+	  images can can be hosted and vitualized by the &LPAR;s that
+	  have access to them.  Then by using the VSCSI protocol,
+	  other &LPAR;s can have direct and shared access to them.
+	</para>
+      </section>
+    </section>
+  </section>
+  <section>
+    <title>Performace Characteristics</title>
+    <subtitle>The Punt</subtitle>
+    <para>
+      Unfortunately, detailed performace results were beyond the scope
+      of this project (due to funding restrictions). However, early
+      performance characteristics using unoptimized code paths have
+      shown a less then 4% overhead in CPU bound performance, in order
+      to accomodate a Hypevisor and a single controlling/IO Hosting
+      Linux.  On I/O bound workloads preliminary results show that
+      virtualizing I/O produces a 20% loss from the adapters
+      theoretical bandwidth, WRT disk and/or networking.
+    </para>
+    <para>
+      In a heterogenous environment (such as the Cell Processors)
+      where the workload is self contained in the
+      <acronym>SPE</acronym> the perfoamce impact was engligible and
+      in somecases immeasurable.
+    </para>
+  </section>
+</article>
+
+<!--
+Local Variables:
+sgml-validate-command: "nsgmls -s %s %s"
+sgml-indent-data: t
+sgml-insert-missing-element-comment: t
+End:
+-->

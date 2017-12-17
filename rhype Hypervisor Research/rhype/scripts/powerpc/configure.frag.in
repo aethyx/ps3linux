@@ -1,0 +1,164 @@
+dnl
+dnl Copyright (C) 2005 Jimi Xenidis <jimix@watson.ibm.com>, IBM Corporation
+#
+#
+# build this with the following command
+#  simply cd to the root of the src and run the auogen.sh script
+#
+dnl these make autoconf happy
+AC_INIT(../../autogen.sh)
+AC_CHECK_TOOL(bash)
+
+dnl *** NEXT MARKS BEGINING OF THE FRAGMENT DO NOT REMOVE ***
+
+#BEGIN_CONFIG
+
+dnl Copyright (C) 2005 Jimi Xenidis <jimix@watson.ibm.com>, IBM Corporation
+dnl
+dnl This program is free software; you can redistribute it and/or modify
+dnl it under the terms of the GNU General Public License as published by
+dnl the Free Software Foundation; either version 2 of the License, or
+dnl (at your option) any later version.
+dnl 
+dnl This program is distributed in the hope that it will be useful,
+dnl but WITHOUT ANY WARRANTY; without even the implied warranty of
+dnl MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+dnl GNU General Public License for more details.
+dnl 
+dnl You should have received a copy of the GNU General Public License
+dnl along with this program; if not, write to the Free Software
+dnl Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307 USA
+dnl
+dnl $Id$
+dnl 
+
+echo "Configuring for powerpc..."
+
+if test "$HYPE_IN_CONFIG" != "toplevel"; then
+  AC_MSG_ERROR([Must be sourced by the toplevel configure script])
+fi
+
+HYPE_IN_CONFIG=powerpc
+
+#
+# This tells the <srcdir>/lib Makefiles what subdirs to go into
+#
+LIBDIRS=powerpc
+ISA=powerpc
+
+plat_outputs="${plat_outputs} lib/powerpc/Makefile"
+# always do 32
+plat_outputs="${plat_outputs} lib/powerpc/32/Makefile"
+
+AC_MSG_CHECKING(for supported boot-env for PPC)
+case "${boot_env}" in
+  default | OF | of)
+    boot_env=of
+    BOOT_ENV=boot_of.o
+    BOOT_ENVIRONMENT=OF
+    AC_DEFINE(BOOT_ENVIRONMENT_of)
+    ;;
+  metal)
+    boot_env=metal
+    BOOT_ENV=boot_metal.o
+    BOOT_ENVIRONMENT=Metal
+    AC_DEFINE(BOOT_ENVIRONMENT_metal)
+    ;;
+  *)
+    AC_MSG_ERROR(PPC Boot Environment ${boot_env}: unsupported)
+esac
+AC_MSG_RESULT($boot_env)
+
+AC_MSG_CHECKING([for supported boot-console for PPC])
+case "${boot_console_dev}" in
+  default | OF | of)
+    boot_console_dev=of
+    IO_CHANNELS="${IO_CHANNELS}" # io_chan_of.o"
+    BOOT_CONSOLE_DEV=boot_of.o
+    AC_DEFINE(BOOT_CONSOLE_of)
+    ;;
+  Zilog | zilog )
+    boot_console_dev=zilog;
+    IO_CHANNELS="${IO_CHANNELS} zilog.o"
+    if test "$boot_console_dev_addr" != "default"; then
+      AC_DEFINE_UNQUOTED(BOOT_CONSOLE_DEV_ADDR, $boot_console_dev_addr)
+    fi
+    AC_DEFINE(BOOT_CONSOLE_zilog)
+    
+    ;;
+  VGA | vga)
+    boot_console_dev=vga
+    IO_CHANNELS="${IO_CHANNELS} vga.o"
+    BOOT_CONSOLE_DEV=boot_vga.o
+    if test "$boot_console_dev_addr" != "default"; then
+      AC_DEFINE_UNQUOTED(BOOT_CONSOLE_DEV_ADDR, $boot_console_dev_addr)
+    fi
+    AC_DEFINE(BOOT_CONSOLE_vga)
+    ;;
+
+  UART | uart | UART-NS1675 | uart-ns1675)
+    boot_console_dev=uart_ns1675
+    IO_CHANNELS="${IO_CHANNELS} uartNS16750.o"
+    BOOT_CONSOLE_DEV=boot_uart_ns16750.o
+    if test "$boot_console_dev_addr" != "default"; then
+      AC_DEFINE_UNQUOTED(BOOT_CONSOLE_DEV_ADDR, $boot_console_dev_addr)
+    fi
+    if test "$boot_console_dev_opts" != "default"; then
+      AC_DEFINE_UNQUOTED(BOOT_CONSOLE_DEV_OPTS, "$boot_console_dev_opts")
+    fi
+    AC_DEFINE(BOOT_CONSOLE_uart_ns1675)
+    ;;
+
+  *)
+    AC_MSG_ERROR(Unknown boot console: $boot_console_dev: )
+    ;;
+esac
+AC_MSG_RESULT($boot_console_dev, $boot_console_dev_addr, $boot_console_dev_opts)
+
+AC_DEFINE_UNQUOTED(BOOT_CONSOLE_DEV,BOOT_CONSOLE_$boot_console_dev)
+
+IO_CHANNELS="${IO_CHANNELS} zilog.o"
+
+dnl Can specify the OF path of the output device to use
+AC_MSG_CHECKING([for default output device OF-path])
+AC_ARG_WITH(of-output-device,
+  [  --with-of-output-device=PATH
+			OpenFirmware device path to use for output],
+  [  of_output_device=$withval;
+     AC_DEFINE_UNQUOTED(OF_OUTPUT_DEVICE, "$of_output_device") ])
+
+AC_MSG_RESULT($of_output_device)
+
+machine_name_string="PowerPC-System"
+AC_DEFINE_UNQUOTED(MACHINE_NAME_STRING, "${machine_name_string}")
+
+case "${PLATFORM}" in
+  ppc64*)
+    . ${srcdir}/scripts/powerpc/64/configure.frag
+    ;;
+  ppc32*)
+    . ${srcdir}/scripts/powerpc/32/configure.frag
+    ;;
+  *)
+    AC_MSG_ERROR(${PLATFORM}: Not A Supported Platform!)
+    ;;
+esac
+
+if test "${enable_openfw}" = "yes"; then
+   of_opt_outputs="plugins/openfw/powerpc/Makefile ${of_opt_outputs}"
+   of_opt_outputs="${of_opt_outputs} plugins/openfw/powerpc/32/Makefile"
+fi
+
+AC_MSG_CHECKING(if hypervisor is using rtas)
+if test "x$HV_USES_RTAS" = "x"; then
+   HV_USES_RTAS=no
+else
+   AC_DEFINE(HV_USES_RTAS)
+fi
+AC_MSG_RESULT($HV_USES_RTAS)
+
+dnl *** NEXT LINE MARKS END OF THE FRAGMENT DO NOT REMOVE ***
+
+#END_CONFIG
+
+AC_OUTPUT($all_outputs)

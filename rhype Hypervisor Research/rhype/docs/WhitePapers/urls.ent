@@ -1,0 +1,14 @@
+<!-- URLs in the document -->
+<!ENTITY watson.url     "http://www.watson.ibm.com">
+<!ENTITY k42.url        "http://www.research.ibm.com/k42">
+<!ENTITY linux.url      "http://www.linux.org">
+<!ENTITY gnu.url        "http://www.gnu.org">
+<!ENTITY glibc.url      "&gnu.url/software/libc">
+<!ENTITY emacs.url      "&gnu.url/software/emacs/emacs.html">
+<!ENTITY make.url       "&gnu.url/software/make">
+<!ENTITY genabi.url     "http://www.sco.com/developer/devspecs">
+<!ENTITY lxrun.url      "http://www.ugcs.caltech.edu/~steven/lxrun">
+<!ENTITY xemacs.url     "http://www.xemacs.org">
+<!ENTITY oasis.url      "http://www.oasis-open.org">
+<!ENTITY dbhtml.url     "&oasis.url/docbook/documentation/reference/html" >
+<!ENTITY db.url         "&dbhtml.url/docbook.html"> 

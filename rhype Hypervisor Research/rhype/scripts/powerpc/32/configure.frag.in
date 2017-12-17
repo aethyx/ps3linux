@@ -1,0 +1,121 @@
+dnl
+dnl Copyright (C) 2005 Jimi Xenidis <jimix@watson.ibm.com>, IBM Corporation
+#
+#
+# build this with the following command
+#  simply cd to the root of the src and run the auogen.sh script
+#
+#
+#
+# WARNING: This file has no maintainer and probably does not work
+#   See the ../64/configure.frag.in for hints on how to fix
+#
+#
+
+AC_INIT(../../../autogen.sh)
+
+AC_CHECK_TOOL(bash)
+
+#BEGIN_CONFIG
+
+dnl Copyright (C) 2005 Jimi Xenidis <jimix@watson.ibm.com>, IBM Corporation
+dnl
+dnl This program is free software; you can redistribute it and/or modify
+dnl it under the terms of the GNU General Public License as published by
+dnl the Free Software Foundation; either version 2 of the License, or
+dnl (at your option) any later version.
+dnl 
+dnl This program is distributed in the hope that it will be useful,
+dnl but WITHOUT ANY WARRANTY; without even the implied warranty of
+dnl MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+dnl GNU General Public License for more details.
+dnl 
+dnl You should have received a copy of the GNU General Public License
+dnl along with this program; if not, write to the Free Software
+dnl Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307 USA
+dnl
+dnl $Id$
+dnl 
+
+echo "Configuring for ppc32..."
+
+dnl Look for PPC32 toolchain
+AC_SUBST(PPC32_TOOLS)
+PPC32_TOOLS=powerpc-linux-
+case "${build}" in
+  powerpc*-linux*) PPC32_TOOLS= ;;
+esac
+
+dnl Look for PPC32 toolchain
+AC_SUBST(PPC32_TOOLS)
+PPC32_TOOLS=powerpc-linux-
+case "${build}" in
+  powerpc-linux*) PPC32_TOOLS= ;;
+esac
+
+AC_PATH_PROG(PPC32_AR, ${PPC32_TOOLS}ar, no, $PATH:/opt/cross/bin)
+if test "$PPC32_AR" = no; then
+  AC_MSG_ERROR(${PPC32_TOOLS}ar was not found.)
+fi
+
+AC_PATH_PROG(PPC32_RANLIB, ${PPC32_TOOLS}ranlib, no, $PATH:/opt/cross/bin)
+if test "$PPC32_RANLIB" = no; then
+  AC_MSG_ERROR(${PPC32_TOOLS}ranlib was not found.)
+fi
+
+AC_PATH_PROG(PPC32_CC, ${PPC32_TOOLS}gcc, no, $PATH:/opt/cross/bin)
+if test "$PPC32_CC" = no; then
+  AC_MSG_ERROR(${PPC32_TOOLS}gcc was not found.)
+fi
+
+AC_PATH_PROG(PPC32_OBJCOPY, ${PPC32_TOOLS}objcopy, no, $PATH:/opt/cross/bin)
+if test "$PPC32_OBJCOPY" = no; then 
+  AC_MSG_ERROR(${PPC32_TOOLS}objcopy was not found.)
+fi
+
+AC_PATH_PROG(PPC32_OBJDUMP, ${PPC32_TOOLS}objdump, no, $PATH:/opt/cross/bin)
+if test "$PPC32_OBJDUMP" = no; then
+  AC_MSG_ERROR(${PPC32_TOOLS}objdump was not found.)
+fi
+
+dnl get platform to compile for
+AC_SUBST(PLATFORM)
+AC_MSG_CHECKING(with-platform)
+AC_ARG_WITH(platform,
+  [  --with-platform=PLATFORM
+			  Specify platform.],
+  PLATFORM="$withval")
+AC_MSG_RESULT($PLATFORM)
+
+case "$PLATFORM" in
+  44x)
+    AC_DEFINE(TARGET_ILP32)
+    AC_DEFINE(CPU_4xx)
+    AC_DEFINE(CPU_44x)
+    AC_DEFINE(NUM_SPRGS, 8)
+    AC_DEFINE(CACHE_LINE_SIZE, 32)
+    # not sure if this is true
+    AC_DEFINE(HAS_MSR_IP)
+
+    ISA=ppc32
+
+    ARCH_TOOLS=$PPC32_TOOLS
+    PREBOOT=preboot.o
+    BOOTENTRY="-e _preboot"
+    ARCH_CFLAGS="-Wa,-mbooke,-m405"
+    ARCH_CPPFLAGS="-I\$(top_srcdir)/include/44x ${ARCH_CPPFLAGS}"
+    ARCH_LDFLAGS="-L\$(top_builddir)/lib/ppc32"
+    ARCH_OBJS="vm_4xx.o tlb_4xx.o init_4xx.o"
+    BOOT_OBJS="preboot.o init_4xx.o"
+    LIBDIRS="ppc32"
+
+#    gcc_incs=`${PPC32_CC} ${ARCH_CFLAGS} -print-file-name=include`
+
+    ;;
+  *)
+    echo "$PLATFORM: Not A Supported Platform!"
+    exit
+    ;;
+esac
+
+#END_CONFIG

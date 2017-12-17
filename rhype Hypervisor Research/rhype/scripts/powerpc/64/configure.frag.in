@@ -1,0 +1,190 @@
+dnl
+dnl Copyright (C) 2005 Jimi Xenidis <jimix@watson.ibm.com>, IBM Corporation
+#
+#
+# build this with the following command
+#  simply cd to the root of the src and run the auogen.sh script
+#
+dnl these make autoconf happy
+
+AC_INIT(../../../autogen.sh)
+AC_CHECK_TOOL(bash)
+
+dnl *** NEXT MARKS BEGINING OF THE FRAGMENT DO NOT REMOVE ***
+
+#BEGIN_CONFIG
+
+dnl Copyright (C) 2005 Jimi Xenidis <jimix@watson.ibm.com>, IBM Corporation
+dnl
+dnl This program is free software; you can redistribute it and/or modify
+dnl it under the terms of the GNU General Public License as published by
+dnl the Free Software Foundation; either version 2 of the License, or
+dnl (at your option) any later version.
+dnl 
+dnl This program is distributed in the hope that it will be useful,
+dnl but WITHOUT ANY WARRANTY; without even the implied warranty of
+dnl MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+dnl GNU General Public License for more details.
+dnl 
+dnl You should have received a copy of the GNU General Public License
+dnl along with this program; if not, write to the Free Software
+dnl Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307 USA
+dnl
+dnl $Id$
+dnl 
+
+echo "Configuring for powerpc 64-bit ..."
+echo "First platform adaption"
+
+#
+# Sanity checks
+#
+if test "$HYPE_IN_CONFIG" != "powerpc"; then
+  AC_MSG_ERROR([Must be run by the powerpc generic configure])
+fi
+
+case "${PLATFORM}" in
+  ppc64*)
+    HYPE_IN_CONFIG=powerpc64
+    ;;
+  *)
+    AC_MSG_ERROR(${PLATFORM}: Not A Supported Platform!)
+    ;;
+esac
+
+#
+# these should apply to all powerpc64
+#
+AC_DEFINE(TARGET_LP64)
+AC_DEFINE(HAS_64BIT)
+AC_DEFINE(HAS_HTAB)
+AC_DEFINE(HAS_FP)
+AC_DEFINE(NUM_SPRGS, 4)
+AC_DEFINE(HAS_MSR_SF)
+
+AC_DEFINE(CACHE_LINE_SIZE, 128)
+
+CPU_GRP=64
+
+ccp_isa="-I\$(top_srcdir)/include/\$(ISA)"
+ccp_cpu_grp="-I\$(top_srcdir)/include/\$(ISA)/\$(CPU_GRP)"
+ccp_cpu_core="-I\$(top_srcdir)/include/\$(ISA)/\$(CPU_GRP)/\$(CPU_CORE)"
+HOST_CPPDIRS="${ccp_cpu_core} ${ccp_cpu_grp} ${ccp_isa} ${HOST_CPPDIRS}"
+
+HOST_BFDNAME=elf64-powerpc
+HOST_BFDARCH=powerpc
+plat_outputs="${plat_outputs} lib/powerpc/64/Makefile"
+
+echo "Second platform adaption"
+
+case "${PLATFORM}" in
+  ppc64-970*-*)
+    # not sure if this is true
+    AC_DEFINE(HAS_MSR_IP) 
+
+    # HAS_RMOR is actually an misnomer, instead it 
+    # should be called HAS_HYPERVISOR
+    # power4 has one.
+    AC_DEFINE(HAS_RMOR)
+
+    AC_DEFINE(HAS_SWSLB)
+    AC_DEFINE(SWSLB_SR_NUM, 64) # how many SLB's to save and restore
+    AC_DEFINE(HAS_HYPE_SYSCALL)
+    AC_DEFINE(HAS_HDECR)
+    AC_DEFINE(HAS_MSR_HV)
+    AC_DEFINE(CPU_CORE, 970)
+    machine_name_string="Momentum,Maple"
+    AC_DEFINE_UNQUOTED(MACHINE_NAME_STRING, "${machine_name_string}")
+    CPU_CORE=970
+
+    # defaults
+    enable_openfw=yes
+    with_eic=openpic
+
+    case "${PLATFORM}" in
+      ppc64-970*-maple)
+	CUSTOM_HW=maple_hw.o
+        IO_XLATE=io_xlate_u3.o
+	MACHINE=maple
+        ;;
+      ppc64-970*-JS20 | ppc64-970*-js20)
+	CUSTOM_HW=js20_hw.o
+        IO_XLATE=io_xlate_u3.o
+	MACHINE=js20
+        ;;
+      ppc64-970*-mambo)
+        CUSTOM_HW=mambo_hw.o
+	MACHINE=mambo
+        ;;
+      ppc64-970*-metal)
+        HW_QUIRKS=none
+	enable_openfw=no
+	MACHINE=metal
+        ;;
+      ppc64-970*)
+        HW_QUIRKS=none
+	AC_MSG_WARN(There is no 970 machine defined.)
+        ;;
+    esac
+    ;;
+  ppc64-*)
+    script=`echo "${PLATFORM}" | sed -e 's/ppc64-//'`
+    script=`echo "${script}" | sed -e 's/-.*//'`
+    if test -r "${srcdir}/${script}/configure.frag"; then
+      . ${srcdir}/${script}/configure.frag
+    else
+      AC_MSG_ERROR(${PLATFORM}: Not A Supported Platform!)
+    fi
+    ;;
+  *)
+    AC_MSG_ERROR(${PLATFORM}: Not A Supported Platform!)
+    ;;
+esac
+
+echo "Platform adaptions done"
+
+HOST_LDFLAGS="${HOST_LDFLAGS} -L\$(top_builddir)/lib/\$(ISA)/\$(CPU_GRP)"
+
+if test "${enable_openfw}" = "yes"; then
+   of_opt_outputs="${of_opt_outputs} plugins/openfw/powerpc/64/Makefile"
+fi
+
+dnl find the toxols
+
+if test "$host" = "$build"; then
+  HOST_TOOLS_PREFIX=
+else
+  HOST_TOOLS_PREFIX=powerpc64-linux-
+fi
+
+HOST_ALT_TOOLS=ppc32
+HOST_ALT_BFDNAME=elf32-powerpc
+
+case "$build" in
+  powerpc*-*linux-*)
+    HOST_ALT_TOOLS_PREFIX=
+    ;;
+  *)
+    HOST_ALT_TOOLS_PREFIX=powerpc-linux-
+    ;;
+esac
+
+case "$with_hba" in
+  default)
+    HOST_BUS_ADAPTER=hba_default.o
+    ;;
+  rtas)
+    HV_USES_RTAS=yes;
+    HOST_BUS_ADAPTER=hba_rtas.o
+    with_hba=rtas
+    ;;
+  *)
+    AC_MSG_WARN(HBA: ${with_hba}: not supported.)
+    AC_MSG_ERROR(${PLATFORM} supports rtas or default.)
+    ;;
+esac
+
+
+#END_CONFIG
+
+AC_OUTPUT($all_outputs)

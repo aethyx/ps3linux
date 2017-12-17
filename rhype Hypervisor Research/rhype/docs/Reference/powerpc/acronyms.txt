@@ -1,0 +1,75 @@
+Acronyms used in this project
+Term	Meaning
+ALU	Arithmetic logic unit
+ASR	Address space register
+BAT	Block address translation
+BIST	Built-in self test
+BPU	Branch processing unit
+BUID	Bus unit ID
+CR	Condition register 
+CTR	Count register 
+DABR	Data address breakpoint register
+DAR	Data address register 
+DBAT	Data BAT
+DEC	Decrementer register
+DSISR	Register used for determining the source of a DSI exception
+DTLB	Data translation lookaside buffer
+EA	Effective address
+EAR	External access register 
+ECC	Error checking and correction
+FPECR	Floating-point exception cause register 
+FPR	Floating-point register
+FPSCR	Floating-point status and control register 
+FPU	Floating-point unit
+GPR	General-purpose register
+LPES	Logical Partitioning Environment Selector
+LPIDR	Logical Partition Identity Register
+IBAT	Instruction BAT
+IEEE	Institute of Electrical and Electronics Engineers
+ITLB	Instruction translation lookaside buffer
+IU	Integer unit
+L2	Secondary cache 
+LIFO	Last-in-first-out
+LPAR	Logical Partitioning
+LR	Link register 
+LRU	Least recently used
+LSB	Least-significant byte
+lsb	Least-significant bit
+MESI	Modified/exclusive/shared/invalid--cache coherenc
+MMU	Memory management unit
+MSB	Most-significant byte
+msb	Most-significant bit
+MSR	Machine state register 
+NaN	Not a number
+NIA	Next instruction address
+No-op	No operation
+OEA	Operating environment architecture
+PIR	Processor identification register 
+PTE	Page table entry
+PTEG	Page table entry group
+PVR	Processor version register 
+RISC	Reduced instruction set computing
+RMOR	The Real Mode Offset Register
+RMLR	Real Mode Limit Register
+RMCI??	Real Mode Caching Inhibited bit
+RTL	Register transfer language
+RWITM	Read with intent to modify
+SDR1	Register that specifies the page table base address for
+	  virtual-to-physical address translation
+SIMM	Signed immediate value
+SLB	Segment lookaside buffer
+SPR	Special-purpose register
+SPRGn	Registers available for general purposes
+SR	Segment register
+SRR0	Machine status save/restore register 0 
+SRR1	Machine status save/restore register 1
+STE	Segment table entry
+TB	Time base register
+TLB	Translation lookaside buffer
+UIMM	Unsigned immediate value
+UISA	User instruction set architecture
+VA	Virtual address
+VEA	Virtual environment architecture
+XATC	Extended address transfer code
+XER	Register used primarily for indicating conditions such as carries
+	  and overflows for integer operations 

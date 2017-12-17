@@ -1,0 +1,6 @@
+#
+# $Id$
+#
+This directory builds external code to be linked into hype (libbz2).
+None of this code should be modified, just optionally linked in.
+

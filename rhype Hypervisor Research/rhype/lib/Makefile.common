@@ -1,0 +1,58 @@
+#
+# Copyright (C) 2005 Jimi Xenidis <jimix@watson.ibm.com>, IBM Corporation
+#
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 2 of the License, or
+# (at your option) any later version.
+# 
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+# 
+# You should have received a copy of the GNU General Public License
+# along with this program; if not, write to the Free Software
+# Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307 USA
+#
+# $Id$
+#
+
+
+#
+#   These files contain functions shared by test, lib and hype
+#
+
+OBJECTS =	bitmap.o	\
+		chan.o		\
+		debug.o		\
+		hash.o		\
+		hcall.o		\
+		hexstr.o	\
+		memcmp.o	\
+		memcpy.o	\
+		memmove.o	\
+		memset.o	\
+		pgalloc.o	\
+		objalloc.o	\
+		print.o		\
+		snprintf.o	\
+		strncpy.o	\
+		strlen.o	\
+		strnlen.o	\
+		strcmp.o	\
+		strncmp.o	\
+		strstr.o	\
+		strtoul.o	\
+		elf.o		\
+		xcoff.o		\
+		xirr.o
+
+ifeq ($(ENABLE_GDB), yes)
+OBJECTS += gdbstub.o
+endif
+
+# PLEASE DO NOT ABUSE THIS
+strstr.o: CC_WARN += -Wno-cast-qual
+
+CLEAN_FILES += libhype.a

@@ -1,0 +1,91 @@
+#-*-Makefile-*-
+# Copyright (C) 2005 Jimi Xenidis <jimix@watson.ibm.com>, IBM Corporation
+#
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 2 of the License, or
+# (at your option) any later version.
+# 
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+# 
+# You should have received a copy of the GNU General Public License
+# along with this program; if not, write to the Free Software
+# Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307 USA
+#
+# $Id$
+#
+
+#Should realy put much of this in ISA directory
+
+-include $(srcdir)/$(ISA)/$(CPU_GRP)/$(CPU_CORE)/Makefile.cpu
+ifneq ($(top_subdir),)
+# yeah, I hate if's but this path is resolvable by accident
+-include $(top_srcdir)/$(top_subdir)/hype/$(CPU_CORE)/Makefile.cpu
+endif
+
+ifndef LTEXT
+# link text at 2Meg
+LTEXT		= 0x200100 # Must be exactly 100 more than ALT_LTEXT
+ALT_LTEXT	= 0x200000 # A multiple of 1Meg so the ELF note can fit
+endif
+
+OBJECTS +=	cca.o \
+		cpu_core.o \
+		core_os_init.o \
+		debug.o \
+		float.o \
+		gettimebase.o \
+		h_asr_off.o \
+		h_asr_on.o \
+		h_cede.o \
+		h_multi_page.o \
+		h_pci_config.o \
+		h_pci_config_read.o \
+		h_pci_config_write.o \
+		h_real_to_logical.o \
+		h_thread_control.o \
+		h_vm_map.o \
+		htab.o \
+		lp_support.o \
+		psm_arch.o \
+		slb.o \
+		tca.o
+
+
+float.o: HOST_ASFLAGS+=-Wa,-maltivec
+
+
+# Strip and flatten out the hypervisor
+hype.bin: hype
+	$(HOST_OBJCOPY) --output-target=binary $< $@
+
+HYPE_BIN_IMAGE_FLAGS = --input-target=binary \
+		  --output-target=$(HOST_ALT_BFDNAME) \
+		  --binary-architecture=$(HOST_BFDARCH)
+
+hype.bin.o: hype.bin
+	$(HOST_ALT_OBJCOPY) $(HYPE_BIN_IMAGE_FLAGS) $< $@
+
+boot32.o: CUR_TOOL = HOST_ALT
+boot32.o: HOST_ASFLAGS += -Wa,-mppc64bridge
+
+HOST_PRE_LIBS += -lofd
+libofd=../lib/$(ISA)/$(CPU_GRP)/libofd.a
+
+hype: $(libofd)
+
+INSTALL_OBJS=boot32.o
+
+hype.boot: boot32.o hype.bin.o
+	$(HOST_ALT_LINK.o) -Wl,-Ttext,$(ALT_LTEXT) -Wl,-Tdata,$(LTEXT) $^ -o $@
+	$(ISA_TRANSFORM)
+
+hype.boot.bin: hype.boot
+	$(HOST_OBJCOPY) --output-target=binary $< $@
+
+CLEAN_FILES += $(BUILT_SOURCES)
+CLEAN_FILES += hype.bin boot32.o hype.bin.o
+CLEAN_FILES += hype.boot

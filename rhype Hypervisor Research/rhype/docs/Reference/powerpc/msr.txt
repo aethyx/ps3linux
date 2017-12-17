@@ -1,0 +1,54 @@
+MSR bits as described in PPC AS book 3 v2.00
+  Section 2.2.3
+  Physical 2-8
+  PDF: 36 of 153
+
+For stupid people like me who can't deal with a thru d
+hex  bits
+ 9    8|1
+ a    8|2
+ b    8|2|1
+ c    8|4
+ d    8|4|1
+ e    8|4|2 
+ f    8|4|2|1
+
+bit C  Hex               Name Desc
+  0 63 80000000 00000000 SF   64-bit Mode
+  1 62 40000000 00000000 TA   Tags Active Mode
+  2 61 20000000 00000000 ISF  WAS: Interrupt Sixty-Four Bit Mode.
+  3 60 10000000 00000000 HV   Hypervisor State iff PR = 0 in hypervisor state.
+  4 59 --
+  ....
+ 32 31 --
+ 33 30 00000000 40000000 C2   WAS: Security Bit.
+ 34 29 00000000 20000000 SIM  Used by Mambo and SimOS-PPC
+ 35 28 00000000 10000000 MAM  Used by Mambo but not SimOS-PPC
+
+ 37 26 00000000 04000000 --   WAS: Used on POWER Architecture.
+ 38 25 00000000 02000000 VMX  VMX Availabled
+
+ 45 18 00000000 00040000 POW  WAS: Power Management bit.
+ 46 17 00000000 00020000 ???  Is used on some PPC AS. WAS: TGPR on 603
+ 47 16 00000000 00010000 ILE  Interrupt Little-Endian Mode
+
+ 48 15 00000000 00008000 EE   External Interrupt Enable (and Decrementer)
+ 49 14 00000000 00004000 PR   Problem State, 0 = privileged state.
+ 50 13 00000000 00002000 FP   Floating-Point Available
+ 51 12 00000000 00001000 ME   Machine Check Enable
+
+ 52 11 00000000 00000800 FE0  Floating-Point Exception Mode 0
+ 53 10 00000000 00000400 SE   Single-Step Trace Enable
+ 54  9 00000000 00000200 BE   Branch Trace Enable
+ 55  8 00000000 00000100 FE1  Floating-Point Exception Mode 1
+
+ 56  7 00000000 00000080 US   User State (Reserves in Tags inactive)
+ 57  6 00000000 00000040 IP   WAS: Interrupt Prefix
+ 58  5 00000000 00000020 IR   Instruction Relocate
+ 59  4 00000000 00000010 DR   Data Relocate
+
+ 60  3 00000000 00000008 FC   WAS: Firmly Consistent
+ 61  2 00000000 00000004 PMM  Performance Monitor Mark
+ 62  1 00000000 00000002 RI   Recoverable Interrupt
+ 63  0 00000000 00000001 LE   Little-Endian Mode
+

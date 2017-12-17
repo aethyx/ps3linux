@@ -1,0 +1,34 @@
+This directory includes the Linux user-space tools for managing an
+rHype system (e.g. creating partitions).  These programs are intended
+to run on a controller Linux partition that has the /dev/hcall
+cut-thru device.
+
+The tools in this directory must be built seperately and require
+additional configuration.  
+
+Enter the build-tree directory corresponding to this source directory
+and invoke make with the following arguments:
+
+make LINUX_BUILD=<????> LINUX_SRC=<????> PREFIX=<????>
+
+LINUX_BUILD = root of Linux kernel build tree.
+LINUX_SRC   = root of Linux kernel source tree.
+PREFIX	    = location where files will be installed to 
+	      (specifically, to $PREFIX/bin, $PREFIX/lib)
+
+These variables can also be put into "Makefile.vars" in the
+tools/linux build directory.
+
+Note that PREFIX need not be the run-time location of these files.  If
+the runtime path is /foo/bin/prog, it is expected that the lib dir
+exists at /foo/lib.  This allows one to simply NFS-mount PREFIX to
+some arbitrary location for running these programs.
+
+After a build is complete, one must create the default OF device-tree in
+$(PREFIX)/lib/hype/of_tree.
+
+In the Linux partition which will be running these tools, one must
+create a /var/hype directory.
+
+
+

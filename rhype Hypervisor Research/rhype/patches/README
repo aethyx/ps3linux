@@ -1,0 +1,12 @@
+#
+# $Id$
+#
+
+Patches.. yes we need some stinking patches. :-)
+
+This is a single diff that represets three distinct pieces of work.
+  1. The Linux x86 patch.
+  2. Commonized VIO layer, where the PPC64 VIO layer is "fixed" so it
+     can target x86 as well.
+  3. Teach the MAPLE PPC64 configureation to be hypervisor aware.
+

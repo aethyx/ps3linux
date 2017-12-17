@@ -1,0 +1,70 @@
+#-*-Makefile-*-
+# Copyright (C) 2005 Jimi Xenidis <jimix@watson.ibm.com>, IBM Corporation
+#
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 2 of the License, or
+# (at your option) any later version.
+# 
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+# 
+# You should have received a copy of the GNU General Public License
+# along with this program; if not, write to the Free Software
+# Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307 USA
+#
+# $Id$
+#
+
+-include $(srcdir)/$(ISA)/$(CPU_GRP)/Makefile.isa
+
+OBJECTS +=	boot_cpu_leap.o \
+		boot_smp.o \
+		h_cppr.o \
+		h_clear_mod.o \
+		h_clear_ref.o \
+		h_enter.o \
+		h_eoi.o \
+		h_get_xive.o \
+		h_htab.o \
+		h_hypervisor_data.o \
+		h_logical_cache_load.o \
+		h_logical_cache_store.o \
+		h_logical_ci_load.o \
+		h_logical_ci_store.o \
+		h_logical_dcbf.o \
+		h_logical_icbi.o \
+		h_nosupp.o \
+		h_protect.o \
+		h_remove.o \
+		h_rtas.o \
+		h_set_asr.o \
+		h_set_dabr.o \
+		h_set_sprg0.o \
+		h_set_xive.o \
+		h_read.o \
+		io_chan_rtas.o \
+		tlb_switch.o \
+	 	tlbia.o \
+		xirq.o
+
+ifeq ($(ENABLE_GDB), yes)
+OBJECTS += gdbstub_hv.o
+endif
+
+# add the build dir
+HOST_PRE_CPPDIRS += -I.
+
+ISA_TRANSFORM = $(top_builddir)/tools/addnote $@
+
+# the integrated controller
+ifneq ($(EXTERNAL_CONTROLLER),yes)
+ISA_CONTROLLER = controller.o
+endif
+
+TARGETS += hype.boot hype.boot.bin
+
+
+

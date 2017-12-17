@@ -1,0 +1,153 @@
+            The Research Hypervisor Coding Standard Guide
+
+                                 - or -
+
+            How to get Jimi to stop ignoring your patches
+
+NOTE:
+  Sadly the current code is not up to this style, please fix it if
+  you see any violations.
+--------------------------
+
+First go read the Linux Coding Standards, which can be found
+in Documentation/CodingStyle in the Linux source tarball. Then go look at:
+  http://www.kroah.com/linux/talks/ols_2002_kernel_codingstyle_talk/html/
+
+Specifc Coding Conventions
+
+- The maintainer is always right and reservs the right to constantly
+   contradict themselves.  When in doubt, see rule 1).
+
+- Source files
+
+  - Header files.  Enclose the entire file within #ifdefs as follows:
+      #ifndef _NAME_H
+      #define _NAME_H
+          ... your stuff goes here
+      #endif /* _NAME_H */
+
+  - License
+      The project is GPL, please observe this by making sure that all
+      files have the appropriate Copyright Statement.
+
+  - System headers are to be kept to a minimum on the build tools and
+    not used at all for build the host images _ever_. Research
+    Hypervisor is built entirely stand alone.
+
+- Types
+
+  - Why [us]val[NN]? This comes up all the time, so here goes
+
+    - We needed a portable type that represented the natural word size
+      of the machine register, so we invented uval.  The benefits include:
+
+      - Fits a pointer.
+
+      - Usually the most efficient unit size for loads and stores.
+
+      - Most computation is done at this size.
+
+      - Makes print formatting easier.
+
+    - Whats wrong with the C99 types?
+
+      - Nothing except that the equivilent of uval is unintptr_t, 'nuff said.
+
+  - Typedefs (see the URL above for why).
+
+    - Do not use typedefs for aggregate types.
+
+    - Do not use typedefs for scalar types
+
+    - Just don't use them!
+
+    - Exception are the [us]val[NN] types, and when giving context to
+      an integral type (like lock_t) and using typedef to simplify the
+      expression of function pointers: e.g.:
+        typedef sval (*hcall_vec_t)();
+
+  - Enums
+    - Do use enums only if you plan on using the type wherever you use
+      the enum.
+
+    - Unnamed enums are _useless_, please consider #define or a static
+      const variable.
+
+    - Do not use enums for bit-field values.
+      Ex. enum bits{r = 1, w = 2} foo; because foo = r|w becomes meaningless.
+
+  - Struct and Union Members
+
+    - It is prefered that members are prefixed with a 2-3 letter
+      acronym that somewhat represents the struct or union that
+      contains it (try finding all the uses of the member "next" in
+      struct foo). Ex:
+	     struct foobar {struct foo *fb_prev, *fb_next;};
+
+    - Do keep in mind the padding, alignement and 32/64 bit issues
+      with your structures, it is useful to arrange for the structure
+      members to be ordered in decreasing size.
+
+  - Boolean type
+
+    - We don't have one.  Don't think we need one, why?
+
+      - Better designed interfaces usually have more to return then
+        just a boolean.
+
+      - In many cases -1 is the failure case.
+
+      - The real expression is preffered.
+
+      - avoids gratuitous "is_" funtions.
+
+    - For function returns and auto variables use uval (or some other
+      unsigned type).
+
+    - In data structures use the smallest padding/alignment friendly
+      unsigned type.
+
+- Object & file naming
+
+  - All prototypes of objects with external linkage shall have the
+    "extern" storage class specifier.  This allows for the eye to
+    easily tell the prototype from the declaration.
+
+  - Avoid mixed case naming.  Call the object (or file) foo_bar, not
+    FooBar or fooBar.
+
+  - Related sets of functions should:
+
+    - Have a common prefix, like the object name that relates then.
+
+    - Have use related names like init/fini, open/close,
+      release/acquire, don't mix them.
+
+- Conditional expressions
+
+  - With the exceptions of boolean expressions, always compare your
+    variables/pointers against something:
+      if (ptr != NULL) .. NOT .. if (ptr)
+      if (unsigned_val > 0) .. NOT .. if (unsigned_val)
+      if (signed_val != 0) .. NOT .. if (signed_val)
+      if (strncmp() == 0) .. NOT .. if (!strncmp())
+
+  - Use auto variables, with modern compilers they cost you _nothing_
+    and increase readability and debuggability. Ex:
+      uval len = strnlen(foo, maxfoo);
+      if (len > 0) { /* stuff */ }
+
+- Language thingies
+  - If it is in the C99 spec you can use it.
+  - Most GCC extensions are allowed, but where C99 wins where GCC is
+    ambiguous.
+
+- Text styles.
+  - As far as use of space, indentation, braces, and parens are
+    concerned you can use ./scripts/cstyle.sh to see the issues
+    with the file (requires GNU indent).
+    *** NOTE this is not a "silver bullet" and it will complain about/fix
+        things that are ok or desirable so pay attention.
+
+
+

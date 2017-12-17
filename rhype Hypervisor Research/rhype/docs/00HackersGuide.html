@@ -1,0 +1,2049 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML
+><HEAD
+><TITLE
+>Research Hypervisor Hackers Guide</TITLE
+><META
+NAME="GENERATOR"
+CONTENT="Modular DocBook HTML Stylesheet Version 1.76b+
+"></HEAD
+><BODY
+CLASS="ARTICLE"
+BGCOLOR="#FFFFFF"
+TEXT="#000000"
+LINK="#0000FF"
+VLINK="#840084"
+ALINK="#0000FF"
+><DIV
+CLASS="ARTICLE"
+><DIV
+CLASS="TITLEPAGE"
+><H1
+CLASS="TITLE"
+><A
+NAME="AEN2">Research Hypervisor Hackers Guide</H1
+><SPAN
+CLASS="RELEASEINFO"
+>      $Header$
+    <BR></SPAN
+><DIV
+><DIV
+CLASS="ABSTRACT"
+><A
+NAME="AEN5"><P
+></P
+><P
+>	This document is intended for programmers who wish to
+	discuss the code of the Research Hypervisor Project.  It also attempts to
+	introduce the hopes and dreams of the maintainers of the code
+	that, hopefully, will make those dreams a reality.
+      </P
+><P
+></P
+></DIV
+></DIV
+><HR></DIV
+><DIV
+CLASS="TOC"
+><DL
+><DT
+><B
+>Table of Contents</B
+></DT
+><DT
+>1. <A
+HREF="#AEN7"
+>Introduction</A
+></DT
+><DT
+>2. <A
+HREF="#AEN17"
+>Tool-chain</A
+></DT
+><DT
+>3. <A
+HREF="#AEN109"
+>The Source Tree Layout</A
+></DT
+><DD
+><DL
+><DT
+>3.1. <A
+HREF="#AEN124"
+>Source Directory Skeletons</A
+></DT
+><DD
+><DL
+><DT
+>3.1.1. <A
+HREF="#AEN148"
+><TT
+CLASS="FILENAME"
+>./<TT
+CLASS="REPLACEABLE"
+><I
+>module</I
+></TT
+>/</TT
+></A
+></DT
+><DT
+>3.1.2. <A
+HREF="#AEN156"
+><TT
+CLASS="FILENAME"
+>./<TT
+CLASS="REPLACEABLE"
+><I
+>module</I
+></TT
+>/<TT
+CLASS="REPLACEABLE"
+><I
+>ISA</I
+></TT
+>/</TT
+></A
+></DT
+><DT
+>3.1.3. <A
+HREF="#AEN171"
+><TT
+CLASS="FILENAME"
+>./<TT
+CLASS="REPLACEABLE"
+><I
+>module</I
+></TT
+>/<TT
+CLASS="REPLACEABLE"
+><I
+>ISA</I
+></TT
+>/<TT
+CLASS="REPLACEABLE"
+><I
+>word-size</I
+></TT
+>/</TT
+></A
+></DT
+><DT
+>3.1.4. <A
+HREF="#AEN197"
+><TT
+CLASS="FILENAME"
+>./<TT
+CLASS="REPLACEABLE"
+><I
+>module</I
+></TT
+>/<TT
+CLASS="REPLACEABLE"
+><I
+>ISA</I
+></TT
+>/<TT
+CLASS="REPLACEABLE"
+><I
+>word-size</I
+></TT
+>/<TT
+CLASS="REPLACEABLE"
+><I
+>core</I
+></TT
+>/</TT
+></A
+></DT
+></DL
+></DD
+><DT
+>3.2. <A
+HREF="#AEN231"
+>Modules</A
+></DT
+><DD
+><DL
+><DT
+>3.2.1. <A
+HREF="#AEN235"
+>The Root Directory <TT
+CLASS="FILENAME"
+>./</TT
+></A
+></DT
+><DT
+>3.2.2. <A
+HREF="#AEN266"
+><TT
+CLASS="FILENAME"
+>./hype/</TT
+></A
+></DT
+><DT
+>3.2.3. <A
+HREF="#AEN271"
+><TT
+CLASS="FILENAME"
+>./lib/</TT
+>
+	  and
+	  <TT
+CLASS="FILENAME"
+>./include/</TT
+></A
+></DT
+><DT
+>3.2.4. <A
+HREF="#AEN296"
+><TT
+CLASS="FILENAME"
+>./test/</TT
+></A
+></DT
+><DD
+><DL
+><DT
+>3.2.4.1. <A
+HREF="#AEN376"
+><TT
+CLASS="FILENAME"
+>./test/controller</TT
+></A
+></DT
+></DL
+></DD
+><DT
+>3.2.5. <A
+HREF="#AEN401"
+><TT
+CLASS="FILENAME"
+>./pluggins/</TT
+></A
+></DT
+></DL
+></DD
+></DL
+></DD
+><DT
+>4. <A
+HREF="#AEN405"
+>Build and Configuration</A
+></DT
+></DL
+></DIV
+><DIV
+CLASS="SECTION"
+><H1
+CLASS="SECTION"
+><A
+NAME="AEN7">1. Introduction</H1
+><P
+>      The Research Hypervisor Project creates a Hypervisor environment that is suitable for
+      Client Operating System that have had minor changes applied to them in order
+      to run on the small number of machine abstractions the Hypervisor
+      presents.  This is different than Hypervisors that emulate the
+      hardware completely so that no modifications to the Client Operating System
+      are necessary.  Research Hypervisor Project uses what is popularly known as
+      <SPAN
+CLASS="QUOTE"
+>"Para-Virtualization"</SPAN
+>.
+      <A
+NAME="AEN11"
+HREF="#FTN.AEN11"
+>[1]</A
+>
+    </P
+><P
+>      The main objective of this project is to create a coding base by
+      which the Hypervisor that is designed is easily portable to other
+      Instruction Set Architectures (<SPAN
+CLASS="ACRONYM"
+>ISA</SPAN
+>) as well be customized to
+      target a specific implementation of an <SPAN
+CLASS="ACRONYM"
+>ISA</SPAN
+> and therefore keep
+      the resulting code and binary as small as possible.
+    </P
+></DIV
+><DIV
+CLASS="SECTION"
+><HR><H1
+CLASS="SECTION"
+><A
+NAME="AEN17">2. Tool-chain</H1
+><P
+>      The Research Hypervisor Project is dedicated to the Open Source Movement and restricts
+      it primarily supports the features supported by popular Open
+      Source Friendly tools.  The tools that are needed to get, configure,
+      build and test the Research Hypervisor is as follows:
+      <P
+></P
+><DIV
+CLASS="VARIABLELIST"
+><DL
+><DT
+>Source Controller Manager</DT
+><DD
+><P
+>	      Unless you got this from a tarball, you are probably
+	      already familiar with our current <SPAN
+CLASS="ACRONYM"
+>SCM</SPAN
+>
+	      which is (for various reasons) <A
+HREF="https://www.cvshome.org/"
+TARGET="_top"
+>CVS</A
+>.  Anonymous access to the
+	      repository is available to all and instructions can be
+	      found on the project web page. Developer access is
+	      restricted using SSH accounts in order to accept CVS
+	      commits <SPAN
+CLASS="QUOTE"
+>"if you have to ask.. you'll never
+	      know"</SPAN
+>.
+	    </P
+></DD
+><DT
+>Compiler</DT
+><DD
+><P
+>	      Though the project adheres to the <SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>ANSI
+	      C99</I
+></SPAN
+> compiler, our <SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>reference
+	      compiler</I
+></SPAN
+> is the <A
+HREF="http://gcc.gnu.org"
+TARGET="_top"
+>GNU C Compiler</A
+> and we use many
+	      extensions that this compiler provides.  However, in the
+	      case where <A
+HREF="http://gcc.gnu.org"
+TARGET="_top"
+><SPAN
+CLASS="ACRONYM"
+>GCC</SPAN
+></A
+> allows several ways to do something
+	      (eg. structure initializer notation) but the ANSI C99
+	      Specification is explicit, the ANSI Spec shall be used.
+	    </P
+></DD
+><DT
+>Linker, Assembler and Object Tools</DT
+><DD
+><P
+>	      The project uses and adheres to the System V ELF ABI as
+	      defined for the processor that it is targeting.  The
+	      tools for generating and manipulating these object files
+	      are supplied but the <A
+HREF="http://www.gnu.org/software/binutils"
+TARGET="_top"
+>GNU
+	      Binutils</A
+> package.
+	    </P
+></DD
+><DT
+>Cross Toolchain</DT
+><DD
+><P
+>	      It is expected that anytime the above tool-chain is
+	      available to generate code for another host it is
+	      expected to be use by Research Hypervisor.  In fact most developers
+	      usually build using Cross Compilers.
+	    </P
+><P
+>	      Any toolchain (cross or not) that is capable of building
+	      a Linux kernel should be able to build Research Hypervisor.  However,
+	      the ELF specific tool-chain configurations (such as
+	      i686-elf or powerpc-elf) are much simpler to build and
+	      can be easily hosted on alternate development
+	      environments including Apple's <A
+HREF="http://www.apple.com/macosx"
+TARGET="_top"
+>Mac OS X</A
+> and <A
+HREF="http://www.cygwin.com"
+TARGET="_top"
+>Cygwin</A
+> and
+	      for this reason, their use is encouraged.
+	      <DIV
+CLASS="WARNING"
+><P
+></P
+><TABLE
+CLASS="WARNING"
+BORDER="1"
+WIDTH="90%"
+><TR
+><TD
+ALIGN="CENTER"
+><B
+>Warning</B
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+><P
+>		  It is known issue that the powerpc64-elf tool-chain
+		  configuration has yet to exist for GCC, which is sad
+		  since the powerpc64-linux GCC is the hardest to
+		  build.
+		</P
+></TD
+></TR
+></TABLE
+></DIV
+>
+	    </P
+></DD
+><DT
+>Configuration</DT
+><DD
+><P
+>	      The <A
+HREF="http://www.gnu.org/software/autoconf"
+TARGET="_top"
+>GNU Autoconf</A
+>
+	      <A
+NAME="AEN56"
+HREF="#FTN.AEN56"
+>[2]</A
+> 
+
+	      configuration tool is used in order describe the
+	      specific processor and machine environment that Research Hypervisor
+	      will be hosted on.  Currently Autoconf Ver. 2.13 is only
+	      supported, it is a low priority task to update to the
+	      latest version.
+	    </P
+><P
+>	      The resulting <B
+CLASS="COMMAND"
+>configure</B
+> script
+	      depends on a small Unix like environment that is
+	      restricted to POSIX features and any dependencies on
+	      specific GNU extensions of those commands is purely
+	      accidental.
+	    </P
+></DD
+><DT
+>Build</DT
+><DD
+><P
+>	      Research Hypervisor uses the <A
+HREF="http://www.gnu.org/software/make"
+TARGET="_top"
+>GNU Make</A
+>, currently the known minimal
+	      version is 3.79.1.
+	      <DIV
+CLASS="NOTE"
+><BLOCKQUOTE
+CLASS="NOTE"
+><P
+><B
+>Note: </B
+>		  It is a known problem that the current Makefiles do
+		  not support Research Hypervisor to be built in parallel.  It is also
+		  desirable to design a Makefile infrastructure that is
+		  not recursive.  If these topics interest you please
+		  contact a maintainer.
+		</P
+></BLOCKQUOTE
+></DIV
+>
+	    </P
+></DD
+><DT
+>Running</DT
+><DD
+><P
+>	      Currently the resulting binary <B
+CLASS="COMMAND"
+>hype</B
+>
+	      gets created in several forms that is usable by several
+	      systems and simulators.  Research Hypervisor runs on various hardware
+	      <A
+NAME="AEN75"
+HREF="#FTN.AEN75"
+>[3]</A
+>
+
+	      machines.  The project members acknowledge that it is
+	      advantageous to be able to run on a simulator while
+	      developing for Research Hypervisor.  Simulators generally allow you to
+	      run a specific build of Research Hypervisor anywhere as well as supply
+	      the developer with a machine level hook to debug the
+	      entire system.  Frequently it is desirable to debug Research Hypervisor
+	      in this manner if the bug can be reproduced in the
+	      simulated environment.
+	    </P
+><P
+>	      The current X86 Research Hypervisor is known to work on <A
+HREF="http://bochs.sourceforge.net/"
+TARGET="_top"
+>BOCHS</A
+> and
+	      <A
+HREF="http://fabrice.bellard.free.fr/qemu/"
+TARGET="_top"
+>QEMU</A
+> full system simulators and both run on several
+	      platforms.
+	      <DIV
+CLASS="NOTE"
+><BLOCKQUOTE
+CLASS="NOTE"
+><P
+><B
+>Note: </B
+>		  It has also been shown that the Research Hypervisor can run in a
+		  <A
+HREF="http://www.vmware.com"
+TARGET="_top"
+>VMware</A
+> partition.
+		</P
+></BLOCKQUOTE
+></DIV
+>
+	    </P
+><P
+>	      The current PPC Research Hypervisor runs on the <A
+HREF="http://mambo.austin.ibm.com"
+TARGET="_top"
+>Mambo</A
+> 970 simulator
+	      that is currently available in binary only form.
+	    </P
+></DD
+><DT
+>Thinwire</DT
+><DD
+><P
+>	      Thinwire
+	      <A
+NAME="AEN89"
+HREF="#FTN.AEN89"
+>[4]</A
+>
+
+	      is a character IO transport that can use any single
+	      transport to multiplex/de-multiplex several channels of
+	      character IO.  The protocol is a designed to work under
+	      the worst conditions and is therefore slow and suitable
+	      only for character IO.  The transports used by Thinwire
+	      vary from <SPAN
+CLASS="ACRONYM"
+>UART</SPAN
+>s for HW, sockets for
+	      <A
+HREF="http://mambo.austin.ibm.com"
+TARGET="_top"
+>Mambo</A
+>, <SPAN
+CLASS="ACRONYM"
+>PTY</SPAN
+>s for <A
+HREF="http://bochs.sourceforge.net/"
+TARGET="_top"
+>BOCHS</A
+>.
+	    </P
+><P
+>	      The other side of the transport will take all
+	      the channels that are in use and open a listening socket
+	      using a port value that is the channel number plus some
+	      base offset.  This listening socket can then be attached
+	      to with <B
+CLASS="COMMAND"
+>telnet</B
+>, <A
+HREF="http://sources.redhat.com/gdb"
+TARGET="_top"
+><SPAN
+CLASS="ACRONYM"
+>GDB</SPAN
+></A
+> or any other
+	      program that can interact with a socket to communicate
+	      with a channel source within the Hypervisor.
+	    </P
+></DD
+><DT
+>Debugger</DT
+><DD
+><P
+>	      The project is closely tied with to the <A
+HREF="http://sources.redhat.com/gdb"
+TARGET="_top"
+>GNU Project Debugger</A
+> which
+	      can be built as a cross platform debugger but more
+	      importantly is capable of debugging remote victims.
+	      Most of the Simulators used by this project allow for
+	      <A
+HREF="http://sources.redhat.com/gdb"
+TARGET="_top"
+><SPAN
+CLASS="ACRONYM"
+>GDB</SPAN
+></A
+> to control the simulated software.  When on HW,
+	      the Hypervisor core is completely debugable using a Thinwire
+	      channel or other transport.
+	      <DIV
+CLASS="NOTE"
+><BLOCKQUOTE
+CLASS="NOTE"
+><P
+><B
+>Note: </B
+>		  The HW debugging is currently possible for PowerPC
+		  targets and the x86 work is in progress.
+		</P
+></BLOCKQUOTE
+></DIV
+>
+	    </P
+></DD
+></DL
+></DIV
+>
+    </P
+></DIV
+><DIV
+CLASS="SECTION"
+><HR><H1
+CLASS="SECTION"
+><A
+NAME="AEN109">3. The Source Tree Layout</H1
+><P
+>      Research Hypervisor source tree is organized with the following objectives in mind:
+      <P
+></P
+><OL
+TYPE="1"
+><LI
+><P
+>	    Isolation of the different modules. The source tree
+	    contains
+	    Build tools, TestOSes, plugins, and the Hypervisor core it is desirable to isolate the code that is
+	    independent to the module and place the shared code in the
+	    top level areas.
+	  </P
+></LI
+><LI
+><P
+>	    Maximal use of code sharing.  Where generic code would be
+	    automatically used unless a more customized
+	    implementations exists.
+	  </P
+></LI
+><LI
+><P
+>	    To easily and accurately build the smallest most efficient
+	    Hypervisor where the source files that are use to create it can
+	    be easily identified and audited for security purposes.
+	  </P
+></LI
+></OL
+>
+    </P
+><DIV
+CLASS="SECTION"
+><HR><H2
+CLASS="SECTION"
+><A
+NAME="AEN124">3.1. Source Directory Skeletons</H2
+><P
+>	The core Hypervisor is concerned with the partitioning of memory and
+	the accurate <SPAN
+CLASS="QUOTE"
+>"time-slicing"</SPAN
+> of the processors.
+	Therefore the Hypervisor must not only be aware of the differences
+	in the <SPAN
+CLASS="ACRONYM"
+>ISA</SPAN
+>, but must be particularly aware of the
+	differences between the specific chip implementation.  For
+	this reason we have organized the code in order to handle the
+	<SPAN
+CLASS="QUOTE"
+>"grey area"</SPAN
+> that represents the similarities and
+	differences within the <SPAN
+CLASS="ACRONYM"
+>ISA</SPAN
+>.
+	<DIV
+CLASS="NOTE"
+><BLOCKQUOTE
+CLASS="NOTE"
+><P
+><B
+>Note: </B
+>	    The directory structure is intended to only differentiate
+	    between the processor features that allow for the
+	    management of memory and scheduling.  Code that handles
+	    processor features that are not specific to the
+	    <SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>core implementation</I
+></SPAN
+> should be
+	    selected by the configuration system separately.  An
+	    example of this type of code would be the source that
+	    saves and restores the <SPAN
+CLASS="ACRONYM"
+>VMX</SPAN
+>
+	    <SPAN
+CLASS="ACRONYM"
+>PPC</SPAN
+> or the <SPAN
+CLASS="ACRONYM"
+>MMX2</SPAN
+>
+	    <SPAN
+CLASS="ACRONYM"
+>IA32</SPAN
+> registers.
+	  </P
+></BLOCKQUOTE
+></DIV
+>
+      </P
+><P
+>	The basic directory structure can be represented by the following:
+	<A
+NAME="AEN139"><BLOCKQUOTE
+CLASS="BLOCKQUOTE"
+><P
+>	    <TT
+CLASS="FILENAME"
+>./<TT
+CLASS="REPLACEABLE"
+><I
+>module</I
+></TT
+>/<TT
+CLASS="REPLACEABLE"
+><I
+>ISA</I
+></TT
+>/<TT
+CLASS="REPLACEABLE"
+><I
+>word-size</I
+></TT
+>/<TT
+CLASS="REPLACEABLE"
+><I
+>core</I
+></TT
+>/</TT
+>
+	  </P
+></BLOCKQUOTE
+>
+
+	The structure allows for a specific implementation of any
+	programming interface to be customized down to the definition
+	in the <TT
+CLASS="FILENAME"
+><TT
+CLASS="REPLACEABLE"
+><I
+>core</I
+></TT
+>/</TT
+>
+	directory.
+
+	Each directory component is described below.
+      </P
+><DIV
+CLASS="SECTION"
+><HR><H3
+CLASS="SECTION"
+><A
+NAME="AEN148">3.1.1. <TT
+CLASS="FILENAME"
+>./<TT
+CLASS="REPLACEABLE"
+><I
+>module</I
+></TT
+>/</TT
+></H3
+><P
+>	  This is the top-level of every module and the point where
+	  code begins to appear.  Prototypes of interfaces and type
+	  definitions that are intended to be the same for all
+	  architectures are defined at this level.
+	  <DIV
+CLASS="NOTE"
+><BLOCKQUOTE
+CLASS="NOTE"
+><P
+><B
+>Note: </B
+>	      Assembler files are rare at this level, and could only
+	      be present if it defines a data area or the text defined
+	      uses CPP macros that are defined for use at this level.
+	    </P
+></BLOCKQUOTE
+></DIV
+>
+
+	  When the object tree (a.k.a. the <SPAN
+CLASS="QUOTE"
+>"build tree"</SPAN
+>)
+	  has been configured and built for a specific machine, the
+	  objects and resulting binaries can be found at this level.
+	</P
+></DIV
+><DIV
+CLASS="SECTION"
+><HR><H3
+CLASS="SECTION"
+><A
+NAME="AEN156">3.1.2. <TT
+CLASS="FILENAME"
+>./<TT
+CLASS="REPLACEABLE"
+><I
+>module</I
+></TT
+>/<TT
+CLASS="REPLACEABLE"
+><I
+>ISA</I
+></TT
+>/</TT
+></H3
+><P
+>	  The <TT
+CLASS="REPLACEABLE"
+><I
+>ISA</I
+></TT
+> directory is our first
+	  level of specificity.  It is here that the instruction set
+	  and architected registers by the processor are known and
+	  assembler statements in C files and assembler files begin to
+	  appear.
+	</P
+><P
+>	  The name used should describe the architecture in its most
+	  generic form.  Currently <TT
+CLASS="FILENAME"
+>powerpc/</TT
+> and <TT
+CLASS="FILENAME"
+>x86</TT
+> are used to differentiate
+	  the use of those architectures.
+	  <DIV
+CLASS="NOTE"
+><BLOCKQUOTE
+CLASS="NOTE"
+><P
+><B
+>Note: </B
+>	      In the case of the <SPAN
+CLASS="TRADEMARK"
+>Intel</SPAN
+>&reg; 64 bit architecture, it is
+	      expected that there would be an <TT
+CLASS="FILENAME"
+>./<TT
+CLASS="REPLACEABLE"
+><I
+>module</I
+></TT
+>/ia64/</TT
+>
+	      directory introduced at this point, since it does define
+	      a new architecture that only has a 64 bit
+	      implementation.
+	    </P
+></BLOCKQUOTE
+></DIV
+>
+	</P
+></DIV
+><DIV
+CLASS="SECTION"
+><HR><H3
+CLASS="SECTION"
+><A
+NAME="AEN171">3.1.3. <TT
+CLASS="FILENAME"
+>./<TT
+CLASS="REPLACEABLE"
+><I
+>module</I
+></TT
+>/<TT
+CLASS="REPLACEABLE"
+><I
+>ISA</I
+></TT
+>/<TT
+CLASS="REPLACEABLE"
+><I
+>word-size</I
+></TT
+>/</TT
+></H3
+><P
+>	  The <TT
+CLASS="REPLACEABLE"
+><I
+>word-size</I
+></TT
+> directory is where
+	  the <SPAN
+CLASS="QUOTE"
+>"native machine word size"</SPAN
+> is defined.  Any
+	  any differences in the architecture relating to the code
+	  that executes to take advantage of this difference.
+	</P
+><P
+>	  Currently, the expectation is that we are only running
+	  processors that are capable of 32 or 64 bits or both.
+	  <A
+NAME="AEN181"
+HREF="#FTN.AEN181"
+>[5]</A
+>
+	  <DIV
+CLASS="IMPORTANT"
+><BLOCKQUOTE
+CLASS="IMPORTANT"
+><P
+><B
+>Important: </B
+>	      It is by <SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>design</I
+></SPAN
+> that the code
+	      assumes that this <SPAN
+CLASS="QUOTE"
+>"machine word"</SPAN
+> is the
+	      most efficient arithmetic integer size, is sufficient to
+	      access all of addressable memory from the view of the
+	      software program and can be expressed by a C pointer
+	      type and the project base type
+	      <SPAN
+CLASS="STRUCTNAME"
+>uval</SPAN
+>. See Base Types below.
+	    </P
+></BLOCKQUOTE
+></DIV
+>
+
+	  The above assumption contribute to a programming model that
+	  maximizes the portability objectives of Research Hypervisor and is
+	  independent of the model used by the OSes running on top of
+	  Hypervisor.  However, it does specify the the use of registers
+	  when an OS makes a call into the Hypervisor.
+	  <DIV
+CLASS="NOTE"
+><BLOCKQUOTE
+CLASS="NOTE"
+><P
+><B
+>Note: </B
+>	      In the case of the 64 bit extensions of the <SPAN
+CLASS="TRADEMARK"
+>Intel</SPAN
+>&reg; x86
+	      architecture, it is expected that any 64 bit
+	      specific details would be introduced in <TT
+CLASS="FILENAME"
+>./<TT
+CLASS="REPLACEABLE"
+><I
+>module</I
+></TT
+>/x86/64/</TT
+>.
+	    </P
+></BLOCKQUOTE
+></DIV
+>
+	  <DIV
+CLASS="NOTE"
+><BLOCKQUOTE
+CLASS="NOTE"
+><P
+><B
+>Note: </B
+>	      It is expected that any differences between the two
+	      known 64 bit x86 architecture extensions (i.e. <SPAN
+CLASS="TRADEMARK"
+>Intel</SPAN
+>&reg;
+	      EM64T and AMD Athelon/Hammer) shall be introduced in at
+	      this level since they are indeed architecture.  However,
+	      specific core details would appear in the
+	      <TT
+CLASS="REPLACEABLE"
+><I
+>core</I
+></TT
+> directories below.
+	    </P
+></BLOCKQUOTE
+></DIV
+>
+	</P
+></DIV
+><DIV
+CLASS="SECTION"
+><HR><H3
+CLASS="SECTION"
+><A
+NAME="AEN197">3.1.4. <TT
+CLASS="FILENAME"
+>./<TT
+CLASS="REPLACEABLE"
+><I
+>module</I
+></TT
+>/<TT
+CLASS="REPLACEABLE"
+><I
+>ISA</I
+></TT
+>/<TT
+CLASS="REPLACEABLE"
+><I
+>word-size</I
+></TT
+>/<TT
+CLASS="REPLACEABLE"
+><I
+>core</I
+></TT
+>/</TT
+></H3
+><P
+>	  This directory contains the lowest order code.  The code
+	  here represents the <SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>on chip</I
+></SPAN
+> nuances,
+	  errata, work-a-rounds, of a specific implementation,
+	  examples include:
+	  <P
+></P
+><UL
+><LI
+><DIV
+CLASS="FORMALPARA"
+><P
+><B
+>Errata and other work-a-round. </B
+>		  Examples:
+		  a register that needs to be read multiple times
+		      before it is valid, arcane initialization sequences, and clocks that have variable updates
+		  .
+		</P
+></DIV
+></LI
+><LI
+><DIV
+CLASS="FORMALPARA"
+><P
+><B
+>Cache, TLB organization. </B
+>		  Including
+		  size, geometry, coherency, and various methods to manipulate it
+		  .
+		</P
+></DIV
+></LI
+><LI
+><DIV
+CLASS="FORMALPARA"
+><P
+><B
+>Other details. </B
+>		  Including
+		  number of processor level threads, yada yada
+		  .
+		</P
+></DIV
+></LI
+></UL
+>
+	</P
+></DIV
+></DIV
+><DIV
+CLASS="SECTION"
+><HR><H2
+CLASS="SECTION"
+><A
+NAME="AEN231">3.2. Modules</H2
+><P
+>	The project is currently broken up into the following
+	directories that represent these <SPAN
+CLASS="QUOTE"
+>"modules"</SPAN
+>.
+      </P
+><DIV
+CLASS="SECTION"
+><HR><H3
+CLASS="SECTION"
+><A
+NAME="AEN235">3.2.1. The Root Directory <TT
+CLASS="FILENAME"
+>./</TT
+></H3
+><P
+>	  Starting at the top level the source tree we find the
+	  introductory files to the source:
+	  <P
+></P
+><DIV
+CLASS="VARIABLELIST"
+><DL
+><DT
+><TT
+CLASS="FILENAME"
+>./DeadDirs</TT
+></DT
+><DD
+><P
+>		  One of the problems with <A
+HREF="https://www.cvshome.org/"
+TARGET="_top"
+>CVS</A
+> is that it does not
+		  handle the removal of directories very well.  So
+		  when a directory <SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>is</I
+></SPAN
+> removed it
+		  needs to be removed from the repository and then all
+		  developers that have commit access must remove the
+		  directories in their own workspace.  This will stop
+		  the developer from accidentally reintroducing the
+		  directory.  Since this happens infrequently we keep
+		  track of the directories we wish to delete (during
+		  some synchronization point) in this file.
+		</P
+></DD
+><DT
+><TT
+CLASS="FILENAME"
+>./autogen.sh</TT
+></DT
+><DD
+><P
+>		  When a configure file or fragment is changed, that
+		  is most files that end in
+		  <SPAN
+CLASS="QUOTE"
+>"<TT
+CLASS="FILENAME"
+>.in</TT
+>"</SPAN
+>, the
+		  <TT
+CLASS="FILENAME"
+>autogen.sh</TT
+> shell script will
+		  verify that the correct <A
+HREF="http://www.gnu.org/software/autoconf"
+TARGET="_top"
+>Autoconf</A
+> version will be
+		  used and will run <A
+HREF="http://www.gnu.org/software/autoconf"
+TARGET="_top"
+>Autoconf</A
+> on all newer
+		  configuration files in order to produce a final
+		  <B
+CLASS="COMMAND"
+>configure</B
+> script that is then
+		  checked into the repository so that regular builders
+		  of the project need not generate these files
+		  themselves.
+		  <DIV
+CLASS="NOTE"
+><BLOCKQUOTE
+CLASS="NOTE"
+><P
+><B
+>Note: </B
+>		      This is the only program that actually makes
+		      changes in the source tree and is really the
+		      only <SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>exception</I
+></SPAN
+> to not
+		      placing generated code in the source tree.
+		    </P
+></BLOCKQUOTE
+></DIV
+>
+
+		  It is desirable to first check in the
+		  <SPAN
+CLASS="QUOTE"
+>"<TT
+CLASS="FILENAME"
+>.in</TT
+>"</SPAN
+> files into
+		  the repository, rerun
+		  <TT
+CLASS="FILENAME"
+>autogen.sh</TT
+> and then check in
+		  the result.  This will allow the generated scripts
+		  to have matching SCM numbers to the
+		  <SPAN
+CLASS="QUOTE"
+>"<TT
+CLASS="FILENAME"
+>.in</TT
+>"</SPAN
+> file that it
+		  was sourced from.
+		</P
+></DD
+></DL
+></DIV
+>
+	</P
+></DIV
+><DIV
+CLASS="SECTION"
+><HR><H3
+CLASS="SECTION"
+><A
+NAME="AEN266">3.2.2. <TT
+CLASS="FILENAME"
+>./hype/</TT
+></H3
+><P
+>	  The <TT
+CLASS="FILENAME"
+>./hype/</TT
+> directory
+	  contains all sources that execute in the processor modes
+	  designated as the domain of the Hypervisor.
+	</P
+></DIV
+><DIV
+CLASS="SECTION"
+><HR><H3
+CLASS="SECTION"
+><A
+NAME="AEN271">3.2.3. <TT
+CLASS="FILENAME"
+>./lib/</TT
+>
+	  and
+	  <TT
+CLASS="FILENAME"
+>./include/</TT
+></H3
+><P
+>	  The <TT
+CLASS="FILENAME"
+>./lib/</TT
+> directory
+	  is where the <TT
+CLASS="FILENAME"
+>libhype.a</TT
+> static library
+	  is defined.  The library is intended for code that is used
+	  by more that one module.  The interfaces provided by
+	  <TT
+CLASS="FILENAME"
+>libhype.a</TT
+> are as follows.
+	  <P
+></P
+><UL
+><LI
+><DIV
+CLASS="FORMALPARA"
+><P
+><B
+>Partial Standard C Library. </B
+>		  Obviously, not the complete library, but only those
+		  interfaces that are either required by the complier
+		  (<TT
+CLASS="FUNCTION"
+>memcpy(3)</TT
+>) or used by one or
+		  more of the modules
+		  (<TT
+CLASS="FUNCTION"
+>snprintf(3)</TT
+>).
+		</P
+></DIV
+></LI
+><LI
+><DIV
+CLASS="FORMALPARA"
+><P
+><B
+>OS Level Interfaces. </B
+>		  Contains interfaces that are the domain of the OSes
+		  that run on top of Hypervisor.  Some of these interfaces
+		  and definitions are shared by both Hypervisor and the
+		  OSes but they mainly exist for the OSes in the
+		  <TT
+CLASS="FILENAME"
+>./test/</TT
+>.
+		</P
+></DIV
+></LI
+></UL
+>
+	  <DIV
+CLASS="NOTE"
+><BLOCKQUOTE
+CLASS="NOTE"
+><P
+><B
+>Note: </B
+>	      It is the hope of the maintainers to separate out the
+	      above functionality into two separate libraries.
+	      Unfortunately, the rules of binding several static ELF
+	      libraries make the act of linking cumbersome and the
+	      separation non-trivial.
+	    </P
+></BLOCKQUOTE
+></DIV
+>
+	</P
+><P
+>	  The <TT
+CLASS="FILENAME"
+>./include/</TT
+>
+	  directory contains the function prototypes and data
+	  definitions that exist and used by the <TT
+CLASS="FILENAME"
+>./lib/</TT
+> directory.
+	</P
+></DIV
+><DIV
+CLASS="SECTION"
+><HR><H3
+CLASS="SECTION"
+><A
+NAME="AEN296">3.2.4. <TT
+CLASS="FILENAME"
+>./test/</TT
+></H3
+><P
+>	  The <TT
+CLASS="FILENAME"
+>./test/</TT
+> directory
+	  contains a set of Small Client OS images that are designed
+	  to test atomic features of the core Hypervisor.  The Tesing OSes
+	  are often referred to as <SPAN
+CLASS="QUOTE"
+>"ToyOSes"</SPAN
+> and are
+	  designed to be written <SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>almost</I
+></SPAN
+> like
+	  standard C applications.
+	</P
+><P
+>	  The specifics of this programming model is as follows:
+	  <P
+></P
+><UL
+><LI
+><DIV
+CLASS="FORMALPARA"
+><P
+><B
+>OS Startup. </B
+>		  In much the same way that a C application starts
+		  execution by the system calling
+		  <TT
+CLASS="FUNCTION"
+>main()</TT
+>, TestOSes have the
+		  function called by the startup system called
+		  <DIV
+CLASS="FUNCSYNOPSIS"
+><A
+NAME="AEN310"><P
+></P
+><P
+><CODE
+><CODE
+CLASS="FUNCDEF"
+>uval test_os</CODE
+>(uval argc, uval argv[]);</CODE
+></P
+><P
+></P
+></DIV
+>
+		  where:
+		  <P
+></P
+><UL
+><LI
+><P
+>			The value of <TT
+CLASS="PARAMETER"
+><I
+>argc</I
+></TT
+>
+			is number of array elements in
+			<TT
+CLASS="PARAMETER"
+><I
+>argv</I
+></TT
+>
+		      </P
+></LI
+><LI
+><P
+>			<TT
+CLASS="PARAMETER"
+><I
+>argv[argc]</I
+></TT
+> is zero.
+		      </P
+></LI
+><LI
+><P
+>			If <TT
+CLASS="PARAMETER"
+><I
+>argc</I
+></TT
+> is greater than
+			zero then the array values from
+			<TT
+CLASS="PARAMETER"
+><I
+>argv[0]</I
+></TT
+> through
+			<TT
+CLASS="PARAMETER"
+><I
+>argv[argc - 1]</I
+></TT
+>
+			represent the initial register state of the
+			native OS environment.
+		      </P
+></LI
+><LI
+><P
+>			When function returns, the return values is
+			reported to the console of the TestOS and then
+			request that the system terminate it.  While
+			awaiting termination the TestOS simply
+			<SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>yields</I
+></SPAN
+> in a loop.
+		      </P
+></LI
+></UL
+>
+		</P
+></DIV
+></LI
+><LI
+><DIV
+CLASS="FORMALPARA"
+><P
+><B
+>Programmable Exception/Interrupt handlers. </B
+>		  <DIV
+CLASS="WARNING"
+><P
+></P
+><TABLE
+CLASS="WARNING"
+BORDER="1"
+WIDTH="90%"
+><TR
+><TD
+ALIGN="CENTER"
+><B
+>Warning</B
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+><P
+>		      As of this writing, the programmability of the
+		      exceptions handlers is incomplete.  The
+		      following discusses what the model is intended
+		      to be and how it is currently implemented for
+		      PowerPC.
+		    </P
+></TD
+></TR
+></TABLE
+></DIV
+>
+		  
+		  An array of vectors has been created called
+		  <TT
+CLASS="VARNAME"
+>xh_table</TT
+>, each array entry
+		  contains a pointer to a function that handles a
+		  particular exception.  If the entry contains a NULL
+		  pointer, the exception will be ignored.
+		  <DIV
+CLASS="WARNING"
+><P
+></P
+><TABLE
+CLASS="WARNING"
+BORDER="1"
+WIDTH="90%"
+><TR
+><TD
+ALIGN="CENTER"
+><B
+>Warning</B
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+><P
+>		      An <SPAN
+CLASS="QUOTE"
+>"ignored exception"</SPAN
+> should be an
+		      exception that does not require quiecing, such
+		      as a timer interrupt.
+		    </P
+></TD
+></TR
+></TABLE
+></DIV
+>
+		  
+		  The exception handler function should be defined as
+		  follows:
+		  <DIV
+CLASS="FUNCSYNOPSIS"
+><A
+NAME="AEN344"><P
+></P
+><P
+><CODE
+><CODE
+CLASS="FUNCDEF"
+>uval xh_handler</CODE
+>(uval ex, uval *regs);</CODE
+></P
+><P
+></P
+></DIV
+>
+		  where:
+		  <P
+></P
+><UL
+><LI
+><DIV
+CLASS="FORMALPARA"
+><P
+><B
+><TT
+CLASS="PARAMETER"
+><I
+>ex</I
+></TT
+>. </B
+>			  is a unique value that identifies the
+			  specific exceptions which could be an
+			  address or some <SPAN
+CLASS="ACRONYM"
+>IRQ</SPAN
+>
+			  value.  This parameter allows for a single
+			  function to possibly handle several
+			  exceptions.
+			</P
+></DIV
+></LI
+><LI
+><DIV
+CLASS="FORMALPARA"
+><P
+><B
+><TT
+CLASS="PARAMETER"
+><I
+>regs</I
+></TT
+>. </B
+>			  contains the register set of the processor
+			  (or thread) at the time of the
+			  exception. The order of entries is <SPAN
+CLASS="ACRONYM"
+>ISA</SPAN
+>
+			  dependent and the index values can be found
+			  in
+			  <TT
+CLASS="FILENAME"
+>./test/<TT
+CLASS="REPLACEABLE"
+><I
+>ISA</I
+></TT
+>/xh.h</TT
+>.
+			</P
+></DIV
+></LI
+></UL
+>
+		  <TT
+CLASS="FILENAME"
+>./test/powerpc/decbouce.c</TT
+> is an
+		  example of how the PowerPC decrementer handler is
+		  installed and used.
+		</P
+></DIV
+></LI
+><LI
+><DIV
+CLASS="FORMALPARA"
+><P
+><B
+>Memory Mapping. </B
+>		  TestOSes are small enough to run completely without
+		  translation, with minimal translation (one PTE),
+		  translated with a supported page size other than the
+		  standard 4k.  There is a global variable called
+		  <TT
+CLASS="VARNAME"
+>do_map_myself</TT
+>, it has a
+		  <SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>weak</I
+></SPAN
+> default definition of 1,
+		  which means that the default behavior of a TestOS is
+		  to run in <SPAN
+CLASS="QUOTE"
+>"translated mode"</SPAN
+>.
+		</P
+></DIV
+></LI
+></UL
+>
+	  
+	  the most important of them all is
+	  <B
+CLASS="COMMAND"
+>controller</B
+>.
+	</P
+><DIV
+CLASS="SECTION"
+><HR><H4
+CLASS="SECTION"
+><A
+NAME="AEN376">3.2.4.1. <TT
+CLASS="FILENAME"
+>./test/controller</TT
+></H4
+><P
+>	    The Controlling OS is the only OS that the core Hypervisor is
+	    capable of loading.  It is expected to be a binary
+	    <SPAN
+CLASS="ACRONYM"
+>WOS</SPAN
+>
+	    <A
+NAME="AEN381"
+HREF="#FTN.AEN381"
+>[6]</A
+> 
+	  
+	    which is free of any ELF like file information.
+	    Hypervisor expects to simply copy it into the first
+	    partitioned area of memory and execute it at a known
+	    location (normally <TT
+CLASS="CONSTANT"
+>0x0</TT
+>) and an agreed
+	    upon initial register state, which is <SPAN
+CLASS="ACRONYM"
+>ISA</SPAN
+> specific.
+	    This ensures that Hypervisor is free of any knowledge of file
+	    formats and simply consideres a well defined series of
+	    bits.
+	    <DIV
+CLASS="NOTE"
+><BLOCKQUOTE
+CLASS="NOTE"
+><P
+><B
+>Note: </B
+>		The configuration system allows you to choose an
+		alternate Controlling OS by using the
+		<TT
+CLASS="PARAMETER"
+><I
+>--with-controller=<TT
+CLASS="REPLACEABLE"
+><I
+>OS
+		    Image</I
+></TT
+></I
+></TT
+>.  However, the
+		<TT
+CLASS="REPLACEABLE"
+><I
+>OS Image</I
+></TT
+> must loadable and
+		executable in the same way that
+		<B
+CLASS="COMMAND"
+>controller</B
+> is.
+	      </P
+></BLOCKQUOTE
+></DIV
+>
+	  
+	    By default the Controlling OS for Research Hypervisor is
+	    <B
+CLASS="COMMAND"
+>controller</B
+>.
+	  </P
+><P
+>	    The remainder of the Test OSes are collected together and
+	    used to create and linkable object that represents an
+	    array that contains the complete ELF image and a name
+	    associated with it.  This linkable object is then linked
+	    into <B
+CLASS="COMMAND"
+>controller</B
+> so controller can
+	    create a new partition and load the Image into the
+	    partition and cause it to be scheduled as specified by its
+	    ELF information.
+	  
+	    <DIV
+CLASS="NOTE"
+><BLOCKQUOTE
+CLASS="NOTE"
+><P
+><B
+>Note: </B
+>		It is possible to add other OS Images from
+		<SPAN
+CLASS="QUOTE"
+>"outside"</SPAN
+> the project area (such as a
+		bootable Linux Kernel) and have it added to the list
+		of OSes that controller can spawn
+		<B
+CLASS="COMMAND"
+>controller</B
+>.  You can specify a list
+		of external images by using the configure option
+		<TT
+CLASS="PARAMETER"
+><I
+>--with-controller-images=<TT
+CLASS="REPLACEABLE"
+><I
+>FILE1[<SPAN
+CLASS="OPTIONAL"
+>,FILE2,...</SPAN
+>]</I
+></TT
+></I
+></TT
+>
+	      </P
+></BLOCKQUOTE
+></DIV
+>
+	  </P
+></DIV
+></DIV
+><DIV
+CLASS="SECTION"
+><HR><H3
+CLASS="SECTION"
+><A
+NAME="AEN401">3.2.5. <TT
+CLASS="FILENAME"
+>./pluggins/</TT
+></H3
+><P
+>	</P
+></DIV
+></DIV
+></DIV
+><DIV
+CLASS="SECTION"
+><HR><H1
+CLASS="SECTION"
+><A
+NAME="AEN405">4. Build and Configuration</H1
+><P
+>      Research Hypervisor uses the <A
+HREF="http://www.gnu.org/software/make"
+TARGET="_top"
+>GNU Make</A
+> (Minimum Version 3.79.1) and 
+    </P
+></DIV
+></DIV
+><H3
+CLASS="FOOTNOTES"
+>Notes</H3
+><TABLE
+BORDER="0"
+CLASS="FOOTNOTES"
+WIDTH="100%"
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+WIDTH="5%"
+><A
+NAME="FTN.AEN11"
+HREF="#AEN11"
+>[1]</A
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+WIDTH="95%"
+><P
+>	  Although the term originated with the <A
+HREF="http://denali.cs.washington.edu/"
+TARGET="_top"
+>Denali</A
+> the method
+	  has been used by several VMM projects.
+	</P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+WIDTH="5%"
+><A
+NAME="FTN.AEN56"
+HREF="#AEN56"
+>[2]</A
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+WIDTH="95%"
+><P
+>		  Yes we do use Autoconf, but there are no plans to
+		  try to use its <SPAN
+CLASS="QUOTE"
+>"evil"</SPAN
+> cousin
+		  <A
+HREF="http://www.gnu.org/software/automake"
+TARGET="_top"
+>GNU Automake</A
+> since the maintainers believe
+		  <SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>(perhaps erroneously)</I
+></SPAN
+> that
+		  this tool is incapable of easily describing the
+		  configuration that has been designed.
+		</P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+WIDTH="5%"
+><A
+NAME="FTN.AEN75"
+HREF="#AEN75"
+>[3]</A
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+WIDTH="95%"
+><P
+>		  A complete list is forthcoming.
+		</P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+WIDTH="5%"
+><A
+NAME="FTN.AEN89"
+HREF="#AEN89"
+>[4]</A
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+WIDTH="95%"
+><P
+>		  Thinwire is part of the <A
+HREF="http://www.research.ibm.com/k42"
+TARGET="_top"
+>K42</A
+> project but is
+		  available for use by other programs such as Research Hypervisor.
+		</P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+WIDTH="5%"
+><A
+NAME="FTN.AEN181"
+HREF="#AEN181"
+>[5]</A
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+WIDTH="95%"
+><P
+>	      Yes, we acknowledge the existence of machines like
+	      PDP-11s that have been wire wrapped to have an 18 bit
+	      bus, we eagerly await the patch submission for this
+	      machine and others like it so we can giggle
+	      uncontrollably.
+	    </P
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+WIDTH="5%"
+><A
+NAME="FTN.AEN381"
+HREF="#AEN381"
+>[6]</A
+></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+WIDTH="95%"
+><P
+>		Wad O' Stuff
+	      </P
+></TD
+></TR
+></TABLE
+></BODY
+></HTML
+>

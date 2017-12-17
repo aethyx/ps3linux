@@ -1,0 +1,117 @@
+#
+# $Id$
+#
+
+Thinwire
+
+Thinwire is a technique to multiplex multiple communications
+channels over a single serial line (or emulated serial line)
+to a set of sockets.  Since sockets are a fundamental part of
+a Unix environment, the remote end can be on either the local
+machine, or on a remote machine.
+
+In a hardware case, you need a serial line from the client
+machine to a server machine.  With the simos and mambo
+simulators, the simulator automatically routes the bits to the
+socket "localhost:2101".  The "2101" designation is the default
+port value, and can be overridden by the K42_SIMULATOR_PORT
+environment variable to simos/mambo.
+
+Running on the thinwire server machine, is the thinwire server
+program.  The thinwire server takes the input stream that comes
+from the thinwire victim and breaks it up into multiple channels
+-- each channel is redirected to a different socket.  At the
+other end of the socket is a "client" program that provides
+services for the victim.
+
+Figure 1 illustrates how thinwire is used:
+
+
+|--------|     |----------| <--- channel 0 (Console)
+|        |     |          | <--- channel 1 (gdb)
+| victim |<----| thinwire | <--- channel 2 (simip)
+|        |     |          | <--- channel 3  ...
+|--------|     |----------| <--- ...
+
+By default simos and mambo use port 2101 for the communication
+between the thinwire victim (K42, for example), and the thinwire
+server.  Port 2102 is used to talk to the program for channel 0;
+port 2103 for the next channel, 2104 for the next (simip), and so
+on.
+
+The client programs may be run on either the local machine or on
+a remote machine.  The thinwire server is told where the victim
+is.  The client programs are told where thinwire is.  Thus
+for any given client program, we have 3 possible machines:
+
+(a) the victim machine -- v_host
+(b) the thinwire server machine  -- t_host
+(c) the client machine 
+
+Any (or all of these can be "localhost" to indicate that 
+the two programs are on the same machine.
+
+
+When the various pieces are started, they must be told what
+machine and port to use.  These port numbers are defined either
+by command line arguments or environment variables.
+
+To start a system running:
+
+1. Start thinwire.  Give it the name of the machine that
+mambo will be running on and ports for the thinwire victim
+(simos/mambo) as well as those that you want to use for the
+console, gdb, and simip:
+
+> thinwire v_host:2101 2102 2103 2104 2105 2106
+
+
+2. Start console.  
+
+> console t_host:2102
+
+
+3. Start simip.  simip uses two sockets to communicate with thinwire.
+   simip also needs an environment variable set for K42.
+
+> export K42_IOSOCKET_TRANSPORT=wire
+> simip t_host:2104 t_host:2106
+
+
+4. Start mambo (or simos) and boot the K42 kernel.
+
+
+Incidentally, thinwire's first argument when talking to a
+hardware victim is the serial device to use rather than a
+host:port combination.  On Windows boxes the first argument is
+something like "com1:", while on Linux it is something like
+"/dev/tty0"
+
+
+The thinwire channel structure has been modified to reflect the
+possiblity of having multiple victims, such as multiple OSes
+running under a hypervisor, all on the same mambo or hardware.
+The channel space has been segmented into sets of 16
+channels (CHAN_SET_SIZE) (a total of 4 sets of 16 channels
+for 64 channels total).
+
+The idea is that console, which normally runs on channel 0,
+can be run on 0, 16, 32, and 48.  The problem here then would
+be to define what port to use for these four channel 0's.
+
+This is handled by an extension to the command line for thinwire
+-- throw a ":" (colon) between the ports for each set:
+
+thinwire v_host:2101 2102 : 2120 : 2130
+
+This sets up thinwire to talk to mambo on 2101, with consoles on
+2102, (OS 0), 2120 (OS 1), 2130 (OS 2).
+
+Then you would need to start up:
+
+console t_host:2102
+console t_host:2120
+console t_host:2130
+
+(where v_host is the machine with mambo, and t_host is the
+machine with thinwire, by default "localhost").

@@ -1,0 +1,17 @@
+Whats here?
+
+  ./HOWTOs
+    Various text files with possibly useful information.
+
+  ./WhitePapers
+    Idea, concept and any other executroid paper that we have been
+    forced to write all DocBook.
+
+  ./Figures
+    Figures to support documents, all FIG (as in xfig).
+
+  ./Reference
+    This is where you will find handy reference documents.  Before you
+    put them there make sure that they have been released publicly.
+
+

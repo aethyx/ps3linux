@@ -1,0 +1,139 @@
+#
+#  Copyright (C) 2005 Michal Ostrowski <mostrows@watson.ibm.com>, IBM Corp.
+#
+#  This program is free software; you can redistribute it and/or modify
+#  it under the terms of the GNU General Public License as published by
+#  the Free Software Foundation; either version 2 of the License, or
+#  (at your option) any later version.
+#
+#  This program is distributed in the hope that it will be useful,
+#  but WITHOUT ANY WARRANTY; without even the implied warranty of
+#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#  GNU General Public License for more details.
+#
+#  You should have received a copy of the GNU General Public License
+#  along with this program; if not, write to the Free Software
+#  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307 USA
+#
+#  $Id$
+#
+top_srcdir = @top_srcdir@
+srcdir = @srcdir@
+VPATH = @srcdir@
+
+CUR_TOOL=HOST
+
+top_builddir = ../..
+
+PROGRAMS=hcall hload hmsg hmeminfo hpinfo hype_run_lpar hread hype_term ofdfs vdevs
+SH_SCRIPTS=hvcall.sh hype_dump_regs.sh
+PL_SCRIPTS=hype_prep_lpar.pl hype_status.pl hype_kill.pl hype_reset.pl
+PL_LIBS=HypeConst.pm HypeUtil.pm
+
+OBJECTS=$(PROGRAMS:%=%.o) util.o
+
+TARGETS=hvcall.sh
+
+CLEAN_FILES=$(PROGRAMS) $(TARGETS)
+
+include $(top_builddir)/Makefile.conf
+
+-include Makefile.vars
+
+ifndef LINUX_BUILD
+$(error No definition of LINUX_BUILD to point to linux build tree)
+endif
+
+ifndef LINUX_SRC
+$(error No definition of LINUX_SRC to point to linux source tree)
+endif
+
+ifndef PREFIX
+$(error No definition of installation prefix)
+endif
+
+BINDIR=$(PREFIX)/bin
+LIBDIR=$(PREFIX)/lib/hype
+PL_LIBDIR=$(LIBDIR)/perl
+
+
+INSTDIRS=$(BINDIR) $(LIBDIR) $(PL_LIBDIR)
+
+INST_PROGRAMS=	$(PROGRAMS:%=$(BINDIR)/%)
+INST_SCRIPTS=	$(SH_SCRIPTS:%.sh=$(BINDIR)/%) \
+		$(PL_SCRIPTS:%.pl=$(BINDIR)/%)
+
+INST_LIBS= $(PL_LIBS:%=$(PL_LIBDIR)/%)
+
+#
+# Install firmware image stub
+# 
+ifeq ($(ISA),powerpc)
+INST_FW=$(LIBDIR)/of_image
+
+$(INST_FW): $(top_builddir)/plugins/openfw/powerpc/32/of_image
+	$(INSTALL) -m 0644 $^ $@
+endif
+
+all: $(PROGRAMS)
+
+install: $(INSTDIRS) $(SUBDIRS_INSTALL) \
+	$(INST_PROGRAMS) $(INST_SCRIPTS) $(INST_LIBS) $(INST_FW)
+
+
+$(INST_PROGRAMS): $(PREFIX)/bin/%: %
+	$(INSTALL) -m 0755 $^ $@
+
+$(BINDIR)/%: %.sh
+	$(INSTALL) -m 0755 $^ $@
+
+$(BINDIR)/%: %.pl
+	$(INSTALL) -m 0755 $^ $@
+
+$(LIBDIR)/%: %
+	$(INSTALL) -m 0644 $^ $@
+
+$(PL_LIBDIR)/%: %
+	$(INSTALL) -m 0644 $^ $@
+
+$(INSTDIRS):
+	$(INSTALL) -d -m 0755 $@
+
+
+$(PROGRAMS): %: %.o
+
+
+#
+# Have to account for the fact that we're building user-space linux apps.
+# These require linux headers and may also use rhype lib code.
+LINUX_INC_DIRS=-I$(LINUX_BUILD)/include2 \
+		-I$(LINUX_BUILD)/include \
+		-I$(LINUX_SRC)/include	
+
+HOST_CPPFLAGS=-I$(srcdir) -I$(top_srcdir)/include \
+		-I$(top_builddir)/include $(HOST_CPPDIRS) $(LINUX_INC_DIRS)
+
+HOST_LDFLAGS:=$(filter-out -nostdlib, $(HOST_LDFLAGS)) -static
+
+# execvp is borken
+CC_WARN:=$(filter-out -Wcast-qual, $(CC_WARN)) -Wno-cast-qual
+
+ofdfs: $(top_builddir)/lib/$(ISA)/$(CPU_GRP)/libofd.a
+ofdfs: ofdfs.o
+ofdfs: HOST_LDFLAGS+=-lofd
+
+vdevs: vdevs.o
+
+hcall: hcall.o util.o
+hmeminfo: hmeminfo.o util.o
+hpinfo: hpinfo.o util.o
+hmsg: hmsg.o util.o
+
+hload: hload.o
+hread: hread.o util.o
+
+hype_run_lpar: hype_run_lpar.o util.o
+hype_term: hype_term.o util.o
+
+hvcall.sh: $(top_srcdir)/include/lpar.h
+	perl $(srcdir)/mk_hvcall.pl < $< >$@

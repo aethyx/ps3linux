@@ -1,0 +1,127 @@
+dnl
+dnl Copyright (C) 2005 Jimi Xenidis <jimix@watson.ibm.com>, IBM Corporation
+dnl
+dnl This program is free software; you can redistribute it and/or modify
+dnl it under the terms of the GNU General Public License as published by
+dnl the Free Software Foundation; either version 2 of the License, or
+dnl (at your option) any later version.
+dnl 
+dnl This program is distributed in the hope that it will be useful,
+dnl but WITHOUT ANY WARRANTY; without even the implied warranty of
+dnl MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+dnl GNU General Public License for more details.
+dnl 
+dnl You should have received a copy of the GNU General Public License
+dnl along with this program; if not, write to the Free Software
+dnl Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307 USA
+dnl $Id$
+dnl
+
+dnl Process this file with autogen.sh in the top level directory to
+dnl produce a configure script.
+
+dnl Minimum Autoconf version required.
+AC_PREREQ(2.13)
+AC_INIT(WhitePapers/Preface.sgml)
+
+dnl Checks for DocBook Items
+AC_SUBST(jade)
+
+AC_ARG_WITH(jade,
+  [  --with-jade=[jade|openjade]
+                          Use jade or openjade (default: jade).],
+  [jade="$withval"] [jade=""])
+AC_CHECK_PROGS(jade, $jade openjade jade)
+
+AC_SUBST(jadetex)
+AC_CHECK_PROGS(jadetex, jadetex)
+
+AC_SUBST(pdfjadetex)
+AC_CHECK_PROGS(pdfjadetex, pdfjadetex)
+
+AC_SUBST(dvips)
+AC_CHECK_PROGS(dvips, dvips)
+
+AC_SUBST(docbook2man)
+AC_CHECK_PROGS(docbook2man, docbook2man)
+
+AC_SUBST(dsssl_dir)
+AC_MSG_CHECKING(with-dsssl-dir)
+AC_ARG_WITH(dsssl-dir,
+  [  --with-dsssl-dir=DIR
+                          Path to where the DSSSL DocBook Style Sheets are
+  			  found.],
+  [dsssl_dir="$withval"],
+  [
+    dsssl_dir='DocBook Style Sheets in unknown location'
+    if test -f /etc/debian_version; then
+      dsssl_dir=/usr/share/sgml/docbook/stylesheet/dsssl/modular
+    elif test -d /sw; then # darwin/fink
+      dsssl_dir=/sw/share/sgml/dsssl/docbook-dsssl-nwalsh
+    elif test -f /etc/gentoo-release; then
+      dsssl_dir=/usr/share/sgml/stylesheets/dsssl/docbook	  
+    elif test -d /cygdrive; then
+      dsssl_dir=/usr/share/sgml/docbook-dsssl
+    elif test -f /etc/redhat-release; then
+      case `cat /etc/redhat-release` in
+	'Red Hat Linux release 7.'[012]*)
+	  dsssl_dir=/usr/lib/sgml/stylesheets/nwalsh-modular
+	  ;;
+	*)
+	  # this catches mandrake as well
+	  dsssl_dir=/usr/share/sgml/docbook/dsssl-stylesheets
+	  ;;
+      esac
+    fi
+  ]  
+)
+if test ! -d "$dsssl_dir"; then
+  dsssl_dir="unknown"
+fi
+AC_MSG_RESULT($dsssl_dir)
+
+AC_SUBST(catalog)
+AC_MSG_CHECKING(with-catalog)
+AC_ARG_WITH(catalog,
+  [  --with-catalog=CATALOG          What SGML Catalog to use.],
+  [catalog="$withval"],
+  [catalog="none"]
+)
+AC_MSG_RESULT($catalog)
+
+if test "${catalog}" = "none"; then
+  catalog=""
+else
+  catalog="-c ${catalog}"
+fi
+
+dnl get platform to compile for
+AC_MSG_CHECKING(for platform)
+AC_ARG_WITH(platform,
+  [  --with-platform=PLATFORM
+			  Specify platform.],
+  PLATFORM="$withval")
+
+AC_MSG_RESULT(${PLATFORM})
+
+# run any platform specific scripts
+
+platform_script=`echo "${PLATFORM}" | sed -e 's/ppc64-//'`
+platform_script=`echo "${platform_script}" | sed -e 's/-.*//'`
+pscript=${srcdir}/../${platform_script}/docs/configure.frag
+if test -r "${pscript}"; then
+  . ${pscript}
+  opt_outputs="${opt_outputs} ${pscript_outputs}"
+fi
+
+all_outputs="
+Makefile
+Makefile.conf
+WebPage/Makefile
+WhitePapers/Makefile
+WhitePapers/HackersGuide/Makefile
+WhitePapers/Overview/Makefile
+${opt_outputs}
+"
+
+AC_OUTPUT($all_outputs)

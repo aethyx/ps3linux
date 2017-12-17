@@ -1,0 +1,81 @@
+
+Bochs is an open source IA-32 emulator. Here are the instructions for
+running Research Hypervisor x86 under Bochs, you can find more info at:
+  http://bochs.sf.net
+
+We use GRUB, but you can use whatever you want.
+
+*** WARNING: default configuration of Bochs is not sufficient to run
+    Research Hypervisor since we assume 4M pages are available.  So
+    your own build is necessary configuring with the
+    "--enable-4meg-pages"
+
+Example configuration:
+  $ ./configure --enable-debugger --enable-disasm --enable-4meg-pages \
+    --enable-x86-debugger --enable-readline --with-all-libs \
+    --enable-iodebug --enable-ne2000 --enable-pci --prefix=/usr/local
+
+QUICK START
+===========
+
+You can find a 10 MiB sample disk image that contains a sample
+Research Hypervisor and Toy OSes (no Linux) called "hv10m.img" and a
+sample bochsrc called "hv.bochsrc" at this link:
+
+  <<< Web Page to be announced >>
+
+To run you must first start thinwire like on a master pty (this example uses ptyx0),  your kernel may not have that many:
+  $ <build_dir>/thinwire/runthinwire -T "-s\ 9600\ 9600" -d /dev/ptyx0 -p <n>
+
+Where <n> is the number of partition (including controller) that you
+wish to run, then in another terminal run:
+  $ bochs -q -f hv.bochsrc
+
+and you should see the one of the thinwire xterms (controller) asking
+you which Toy OS to run.
+
+
+Update Hypervisor on the disk image
+===================================
+You can mount this image on a Linux boc with the following command (as root):
+  # mount -o loop,offset=0x4000 disk.img /mnt
+
+Then copy your own hypervisor and controller by:
+  # cp <build_dir>/hype/hype.boot <build_dir>/hype/controller.bin /mnt/boot
+  # sync; umount /mnt
+
+
+CREATE YOUR OWN DISK IMAGE
+==========================
+
+To create your own disk image use the bximage(1) command that came
+with Bochs.  This will create a disk image file and give you the Disk
+geometry information that Bochs will require, then the following need
+to occur. You then need to format the disk image (assumes disk.img of
+20Meg):
+    $ parted disk.img
+    (parted) mklabel msdos
+    (parted) mkpartfs primary ext2 0 20
+    (parted) set 1 boot on
+    (parted) print
+    Minor    Start       End     Type      Filesystem  Flags
+    1          0.016     19.937  primary   ext2        boot
+
+
+You will then need the GRUB files from some distro.  You can also
+obtain them from the hv10m.img above.
+  # mount -o loop,offset=0x4000 hv10m.img /mnt/hv
+  # mount -o loop,offset=0x4000 disk.img /mnt/disk
+  # cd /mnt/hv
+  # find . | cpio -pdumv /mnt/disk
+  # cd -
+  # umount /mnt/hv
+  # umount /mnt/disk
+
+The easiest way to install GRUB on your new image is to make
+"disk.img" a second disk in Bochs.  Boot hv10m.img and at the GRUB
+menu prompt type 'c'.  You will now be in the GRUB console, type the
+following commands:
+  grub> root (hd1,0)
+  grub> setup (hd1)
+

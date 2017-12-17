@@ -1,0 +1,119 @@
+
+WARNING: The Mambo Full System Simulator is not generally available to
+the public.
+
+If you are in IBM you can access it from:
+  http://mambo.austin.ibm.com
+
+External information can be had from:
+  http://www.research.ibm.com/journal/rd/475/shafi.pdf
+
+Mambo is a PowerPC simulation environment that can (per build)
+simulate various PPC machine of various implementations (440, 405,
+apache, 750, etc..)
+
+
+Obtain the Mambo package
+------------------------
+  See above.
+
+Cross Debugger with Mambo Patch
+-------------------------------
+  In order to source level debug the code that mambo is running there
+  is a small gdb patch that is required in order to support "Software
+  Single Stepping", this patch and some other handy gdb scripts are
+  available in the mambo-docs/gdb directory of the distribution.
+
+  Quick Instructions:
+
+    $ wget ftp://ftp.gnu.org/gnu/gdb/gdb-6.0.tar.bz2
+    $ tar xfvj gdb-6.0.tar.bz2
+    $ cd gdb-6.0
+    $ patch -p1 < <mambo dir>/mambo-docs/gdb/mambo_gdb-6.0.diff
+    $ ./configure \
+           --target=powerpc64-linux --disable-nls --disable-tui \
+           --disable-gdbtk --disable-profiling --disable-sim
+    $ make
+    $ su
+    # make install
+
+  There are some handy mambo specific debugging scripts available
+    $ cp <mambo dir>/mambo-docs/gdb/dot.gdbinit ~/.gdbinit.mambo
+    $ echo "source ~/.gdbinit.mambo" >> ~/.gdbinit
+    $ rm dot.gdbinit
+
+Installing Mambo (IBM Internal Only)
+-----------------
+  To obtain a binary distribution on mambo, simply pick the aproriate
+  tarball from this list.
+    
+    http://mambo.austin.ibm.com/mambo-bin/date.cgi
+  See also: http://mambo.austin.ibm.com/how-to/getting_started.html
+
+Test mambo
+----------
+
+    $ cd mambo/run/gpul/vhype
+    $ ../run_cmdline
+    mambo % mysim modify fast on
+    mambo % c
+
+  If all goes well, you should be presented with the controller's
+  menu; try booting into hvlinux--it should drop you to a prompt in
+  its initrd.
+
+  *** note: mambo's thinwire may be out of date. I'd suggest
+      editing mambo/run/gpul/vhype/.mambo.tcl, commenting out the
+      runthinwire line, and running a thinwire out of a vhype build
+      directory.
+
+4. Build a Kernel
+-----------------
+   See: Build_Linux HOWTO
+
+
+5. lbootppc
+-----------
+  The lbootppc package exists in order to avoid uncompressing the
+  vmlinux and initrd that would normally be booted on HW.  It is
+  available a a seperate cvs module called lbootppc from our cvs
+  server.
+
+  You will need an initrd, sample initrd will be available on the our
+  Homepage soon.
+
+    $ cd lbootppc
+    $ make VMLINUX=$HOME/hvlinux/build-ppc64/vmlinux \
+           INITRD=$HOME/initrd \
+           PRE=powerpc-750-linux-gnu- PRE64=powerpc64-unknown-linux-gnu-
+
+6. Build Research Hypervisor
+----------------------------
+  Add the following to you Research Hypervisor configure:
+    --platform=ppc64-970-mambo \
+    --enable-thinwire=yes \
+    --with-controller-images=$HOME/lbootppc/hvlinux
+
+  then after build:
+    $ cp hype/hype.boot ~/mambo/images/gpul/hype.boot.img
+
+7. Simulate
+------------
+
+  Just repeat the steps done to test mambo in step 3.
+
+Using gdb with mambo
+--------------------
+  If mambo asks you to connect a gdb to it, simply:
+    $ powerpc64-linux-gdb
+    (gdb) mambo-debug localhost:<port>
+
+  To end the gdb session:
+    (gdb) detach
+    mambo % mysim modify fast on
+    mambo % mysim go
+
+  *** Note: at any time you can stop mambo (^C) and force it to ask for gdb:
+    mambo % mysim modify fast off	# trun fast mode off
+    mambo % mysim debugger wait 0	# wait for gdb to connect
+

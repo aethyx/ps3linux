@@ -1,0 +1,211 @@
+/*
+ * Copyright (C) 2005 Jimi Xenidis <jimix@watson.ibm.com>, IBM Corporation
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
+ * 
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ * 
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307 USA
+ *
+ * $Id$
+ */
+
+#ifndef _CONFIG_H
+#define _CONFIG_H
+
+/*
+ * Machine Evironment
+ */
+
+/* Boot Console Device */
+#undef BOOT_CONSOLE_of
+#undef BOOT_CONSOLE_zilog
+#undef BOOT_CONSOLE_vga
+#undef BOOT_CONSOLE_uart_ns1675
+
+/* Boot Console Address */
+#undef BOOT_CONSOLE_DEV_ADDR
+
+/* Boot Console Options */
+#undef BOOT_CONSOLE_DEV_OPTS
+
+/* Boot Environment */
+#undef BOOT_ENVIRONMENT_metal
+#undef BOOT_ENVIRONMENT_of
+
+/* Default output device to search for in OF */
+#undef OF_OUTPUT_DEVICE
+
+/* define baud rate for serial port access */
+#undef BAUDRATE
+
+/* define baud rate for serial port access for use by thinwire */
+#undef THINWIRE_BAUDRATE
+
+/* FIXME: this needs to be clarified */
+#undef USE_THINWIRE_IO
+
+/* FIXME: this needs to be clarified */
+#undef USE_VGA_CONSOLE
+
+/* define if you want to use openfirmare calls */
+#undef USE_OPENFIRMWARE
+
+/* define if you want gdb stub to be included */
+#undef USE_GDB_STUB
+
+/* define if you are using libbz2 */
+#undef USE_LIBBZ2
+
+/*
+ * Information about the processor
+ */
+/* define if you are running on a 64 bit processor */
+#undef HAS_64BIT
+
+/* define if processor has a dedicated FPU */
+#undef HAS_FP
+
+/* define the cache line size of the processor */
+#undef CACHE_LINE_SIZE
+
+/* define the number of HW threads the processor supports */
+#undef THREADS_PER_CPU
+
+/* define Maximum number of CPUs to support */
+#undef MAX_CPU
+
+/* Log of chunk size to use */
+#undef LOG_CHUNKSIZE
+
+/* Advertised machine name */
+#undef MACHINE_NAME_STRING
+
+/*
+ * Information about the SW ABI
+ */
+
+/* define if ABI defines sizeof long = ptr = 64 bits */
+#undef TARGET_LP64
+
+/* define if ABI uses function descriptors */
+#undef TARGET_FUNCDESC
+
+/*
+ * POWERPC features that need to move to another file
+ */
+
+/* does Hypervisor core use RTAS? */
+#undef HV_USES_RTAS
+
+/* define if processor has a segment lookaside buffer. */
+#undef HAS_SWSLB
+#undef SWSLB_SR_NUM
+/* check */
+#if defined(HAS_SWSLB) && !defined(SWSLB_SR_NUM)
+#define SWSLB_SR_NUM 1
+#endif
+
+/* define if processor has a tagged TLB that doesn't need flushing on
+ * LPAR switch */
+#undef HAS_TAGGED_TLB
+
+
+/* define if processor had a segment table that is walked by the
+processor */
+#undef HAS_STAB
+/* check */
+#if defined(HAS_SWSLB) && defined(HAS_STAB)
+#error "cannot have both segemnt table and SW controlled SLB"
+#endif
+
+/* define if processor has a page table that is walked by the
+ * processor */
+#undef HAS_HTAB
+
+/* define the number of SPRGS the processor has */
+#undef NUM_SPRGS
+
+/* define if targeting the 4xx architecture (includes both 40x and
+ * 44x) */
+#undef CPU_4xx
+
+/* define if targeting the 44x architecture */
+#undef CPU_44x
+
+/* define if processor has a VMX unit */
+#undef HAS_VMX
+
+/* define if has the MSR SF bit ans is indeed 64 bit */
+/* FIXME: this is redundant, no? */
+#undef HAS_MSR_SF
+/* check */
+#if defined(HAS_MSR_SF) && !defined(HAS_64BIT)
+#error "cannot have an MSR SF bit without being a 64 bit processor"
+#endif
+
+/* define if MSR uses the ISF bit (32 bit exception "bridge" mode) */
+#undef HAS_MSR_ISF
+/* check */
+#if defined(HAS_MSR_ISF) && !defined(HAS_MSR_SF)
+#error "cannot have an ISF bit without an SF bit"
+#endif
+
+
+/* define if MSR has IP (Interrupt Prefix) bit */
+#undef HAS_MSR_IP
+
+/* define if processor has a tags active mode and should be used */
+#undef HAS_TAGS_ACTIVE
+
+/*
+ * POWERPC Hypervisor features
+ */
+
+/* define if processor has an MSR HV bit that declared processor is in
+ * HV Mode */
+#undef HAS_MSR_HV
+
+#ifdef HAS_MSR_HV
+  /* define if processor supports a Real Mode Offset Region */
+# undef HAS_RMOR
+
+ /* define if processor supports a "Vectored" suscall instruction that
+  * sets the HV bit in the MSR */
+# undef HAS_HYPE_SYSCALL
+
+  /* define if processor has Hypervisor Decrementor timer */
+# undef HAS_HDECR
+
+  /* processor supports the Mediated interrupt */
+# undef HAS_MEDIATED_EE
+
+#endif /* HAS_MSR_HV */
+
+
+#define CPU_CORE UNKNOWN
+
+/* Default input to be used by "controller" test OS */
+#undef CONTROLLER_INPUT
+
+/* use first controller-image to replace controller */
+#undef RELOADER
+
+/* Default arguments to be passed to an I/O host from controller */
+#undef DEFAULT_LPAR_ARGS
+
+#endif /* #define _CONFIG_H */
+
+/*
+Local Variables:
+mode: c
+End:
+*/

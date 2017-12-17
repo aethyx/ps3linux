@@ -1,0 +1,41 @@
+You can build the Research Hypervisor _and_ Linux using the GCC cross
+compiler.  This document quickly runs through the scenario for obtaining/building a cross-toolchain that tagets PPC32/64.
+
+1. Installing Cross Compilers
+--------------------------
+
+  Crosstool (http://kegel.com/crosstool/) is a set of scripts which eases
+  building cross compilers:
+
+    $ wget http://kegel.com/crosstool/crosstool-0.28-rc37.tar.gz
+    $ tar xfvz crosstool-0.28-rc37.tar.gz
+    $ cd crosstool-0.28-rc37
+    $ sudo mkdir /opt/crosstool
+    $ sudo chown $USER /opt/crosstool
+    $ ./demo-ppc970.sh  # build gcc, binutils, glibc, etc for the 64 bit env
+    $ ./demo-ppc750.sh  # build gcc, binutils, glibc, etc for the 32 bit env
+    $ echo >> ~/.profile <<EOF
+      for d in $(find /opt/crosstool -type d -name bin); do PATH=$PATH:$d; done
+      export PATH
+      EOF
+
+    $ source ~/.profile
+
+  You should now have two cross compilers:
+
+     powerpc-750-linux-gnu-gcc       - 32bit powerpc
+     powerpc64-unknown-linux-gnu-gcc - 64bit powerpc
+
+2. Use Cross Compilers to build Research Hypervisor
+---------------------------------------------------
+  Add the following to your configure line:
+    --build=i386-linux \
+    --host=powerpc64-linux \
+    --with-host-prefix=powerpc64-unknown-linux-gnu- \
+    --with-host-alt-prefix=powerpc-750-linux-gnu-
+
+3. Use Cross Compilers to build Linux
+-------------------------------------
+  Add the collowing to you make invocation
+    CROSS_COMPILE=powerpc64-unknown-linux-gnu- 
+    CROSS32_COMPILE=powerpc-750-linux-gnu-

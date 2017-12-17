@@ -1,0 +1,74 @@
+#
+# Copyright (C) 2005 Jimi Xenidis <jimix@watson.ibm.com>, IBM Corporation
+#
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 2 of the License, or
+# (at your option) any later version.
+# 
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+# 
+# You should have received a copy of the GNU General Public License
+# along with this program; if not, write to the Free Software
+# Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307 USA
+#
+# $Id$
+#
+
+#
+# link text at (4GB - CHUNKSIZE + 1MB) virtual. We load at 1MB physical
+# to avoid the BIOS, and for simplicity we currently map the whole first
+# CHUNKSIZE 1-to-1.
+#
+
+HV_LINK_BASE = 0x00100000
+LTEXT = 0xFC100000	# 4GB - CHUNKSIZE + HV_LINK_BASE
+
+#
+# So POSIX and bash arithmetic _size_ is based on the maximum size of
+# file the system supports.  So we really cannot count on bash to get
+# this correctly in order to accomodate the brokeness of elfedit.  The
+# following seems to get us the right answer.
+#
+LMA_DIFF := $(shell printf "0x%lx\n" $$(($(LTEXT)-$(HV_LINK_BASE))))
+
+OBJECTS += \
+	breakpoint.o \
+	debug.o \
+	h_flush_tlb.o \
+	h_page_dir.o \
+	h_get_pte.o \
+	h_set_mbox.o \
+	h_dr.o \
+	psm_arch.o \
+	handler.o \
+	preempt_thread.o \
+	pgcache.o \
+	idt.o \
+	gdt.o \
+	intr.o \
+	pic.o \
+	tss.o \
+	cpu_core.o
+
+ifeq ($(ENABLE_GDB), yes)
+OBJECTS += gdbstub_hv.o
+endif
+
+HOST_PRE_CPPDIRS += -I.
+
+# the integrated controller: none; we use multiboot modules
+ISA_CONTROLLER = 
+
+TARGETS += hype.boot
+
+# the -s argument is an offset, to avoid setting the LMA of multiple segments
+# to the same value
+# FIXME this need to be simplified
+hype.boot: hype
+	cp $< $@
+	$(top_builddir)/tools/elfedit -s -$(LMA_DIFF) $@  || ($(RM) $@ && false)
+	$(HOST_OBJCOPY) --set-start $(HV_LINK_BASE) $@ || ($(RM) $@ && false)

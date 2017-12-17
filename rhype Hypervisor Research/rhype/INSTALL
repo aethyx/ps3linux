@@ -1,0 +1,161 @@
+#
+# $Id$
+#
+
+Installing the Research Hypervisor
+====================================
+
+Well, for obvious reasons, you do not really install result of
+building this project anywhere.
+
+Most developers will run this out of their build directory. If you
+_do_ perform a `make install', a directory called SDK will be created
+and hype, some other OSes and Makefiles will be copied there.  This
+directory forms a kind of binary distribution that can link in
+arbitrary images can be tarballed and delivered.
+
+Configuring and Compiling the Research Hypervisor
+=================================================
+
+The Research Hypervisor is ment to target several Instruction Set
+Architectures (ISA), but it currently supports only the PowerPC 970 and x86 ( greater that P4) Processors.
+
+We have demonstrated the ability to virtualize other flavors of PowerPC Processors (440, 405, POWER3) and have (where possible) left that work in the source tree in hopes that they can be revived again soon.
+
+We use the GNU Autoconf system and only support building the source _outside_ of the source tree itself.
+
+From your build directory, you simply run the configure script in the
+source directory.
+  $ <path to src>/configure ARGS...
+
+Use the `--help' option for configure on how to use it.
+Then simply,
+
+  $ make
+
+Various final images can be found in the hype directory:
+  hype		- is the full symbolic ELF image that can be used by gdb
+  hype.boot	- is a stripped ELF version of the above
+  hype.boot.bin - is a straight binary image for simpler bootloaders.
+
+All images contain the Controlling Operating System that was selected
+by the configuration system.
+
+As usual, the entire set of configure options can be listed by running:
+  $ ./configure --help
+
+What follows is a brief discussion of some of the more interesting
+configure options:
+
+These are, perhaps, the most confusing options.  In order to reduce the
+size of code that runs in Hypervisor mode we run a "Controlling OS" or
+"controller", which is an OS that the Hypervisor trusts.  This OS is the
+only image the Hypervisor is capable of starting all by itself.
+
+  --with-default-lpar-args=<string> 
+
+    If you wish to pass specific options to the Controlling OS or the
+    default set of args that test/controller should consider as the
+    default argument for all OSes.
+
+  --enable-external-controller don't link controller into hype binary.
+
+    In the case where we have a "smart" boot loader load hypervisor,
+    it is possible to arrange for that boot loader to also load
+    controller into memory and inform hypervisor where it is located.
+
+  --with-controlling-os=FILE  OS that gets loaded by hypervisor.
+
+    In the case of simpler boot loader, we need to embed/link the
+    controller image _in_ the hypervisor image, this allows you to
+    specify at configuration time the Controlling OS.
+
+    The default Controlling OS is test/controller.  This "Toy OS" is
+    cpabable (especially on PPC) configuring the hypervisor and
+    loading more OSes, paritcularly other Test OSes that can be used
+    as unit tests for the hypervisor core.
+
+  --with-controller-images=FILE1[,FILE2[...]]
+
+    If you are using the default test/controller, you can add adition
+    OSes for controller to use or make available for running, this can
+    be any bootable OS image.
+
+  --enable-reloader use first controller-image to replace controller.
+
+    It may be desirable to have test/controller configure the
+    hypervisor core and then "replace"/exec itself with another OS.
+    This enables one to to use a general purpose OS without modifying
+    it to configure the hypervisor on boot.
+
+  *** NOTE: The typical "Linux as Controller" scenario is achieved by
+      using the following combo:
+        --with-default-lpar-args="root=/dev/hda2" \
+        --enable-reloader \
+	--with-controller-images=<path to linux>/vmlinux 
+
+
+The following are necessary if you are cross compiling for selecting
+the toolchain:
+
+  --build=BUILD           configure for building on BUILD [BUILD=HOST]
+
+    The build machine is the machine you are using to build the
+    hypervisor.  Unfortunately the older version of autoconf we are
+    using cannot autodetect this so you always have to define it.
+
+  --host=HOST             configure for HOST [guessed]
+
+    The host machine is the machine that will be running hypervisor.,
+    this makes sure that the right toolchain is used for the job.
+
+Cross compilers can have non-standard prefixes to their names, If
+yours is not our defualt here is where you can specificy.
+
+  --with-build-prefix=PREFIX
+			  Specify build toolchain prefix string.
+  --with-host-prefix=PREFIX
+			  Specify host toolchain prefix string.
+  --with-host-alt-prefix=PREFIX
+			  Specify alternate host toolchain prefix string.
+                            an example is ppc32 for ppc64 host
+
+    In the case of PowerPC 64 bit processors we need both a 32 bit and
+    64 bit compiler.  So the "host-alt' compiler in this case is the
+    powerpc32 compiler.
+
+
+Choosing a specific machine.  Research Hypervisor is build for a
+specific machine in order to keep is image size down.  Particularly
+witht he 970 there are several boot environment available and we need
+to target that machien specifically.
+  --with-platform=PLATFORM
+			  Form of <arch>-[core]-[machine].
+                          x86: x86 architecture.
+                          ppc64-970-js20:   JS20 pBlades with SLOF FW
+                          ppc64-970-maple:  Maple Boards
+                          ppc64-970-mambo:  Mambo GPUL simulator
+                          ppc64-970-metal:  Bare Metal (no FW)
+
+
+  --enable-vga       Use VGA for initial console output.
+
+    We like serial ports, but if on x86 and you don't have one..
+
+  --with-serial-baudrate=<baudrate>
+
+    What baud rate would you like the hypervisor core to use.
+
+  --enable-gdb	    Include gdb stubs (requires --enable-thinwire).
+
+    Enables the Hypervisor and test OSes to be source level debugged by gdb.
+
+  --enable-thinwire       Use thinwire for console multiplexing.
+
+    Use the thinwire multiplexor, see thinwire/README for more
+    information on this.
+
+  --with-thinwire-baudrate=<baudrate>
+
+    Baud rate if switching to thinwire.
+

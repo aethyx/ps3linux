@@ -1,0 +1,982 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML
+><HEAD
+><TITLE
+>Read Me</TITLE
+><META
+NAME="GENERATOR"
+CONTENT="Modular DocBook HTML Stylesheet Version 1.76b+
+"><META
+NAME="KEYWORD"
+CONTENT="Hypervisor"><META
+NAME="KEYWORD"
+CONTENT="howto"><META
+NAME="KEYWORD"
+CONTENT="readme"><META
+NAME="KEYWORD"
+CONTENT="whitepaper"></HEAD
+><BODY
+CLASS="ARTICLE"
+BGCOLOR="#FFFFFF"
+TEXT="#000000"
+LINK="#0000FF"
+VLINK="#840084"
+ALINK="#0000FF"
+><DIV
+CLASS="ARTICLE"
+><DIV
+CLASS="TITLEPAGE"
+><H1
+CLASS="TITLE"
+><A
+NAME="AEN2">Read Me</H1
+><H2
+CLASS="SUBTITLE"
+>How to write DocBook Documents</H2
+><H3
+CLASS="AUTHOR"
+><A
+NAME="AEN5"
+>Hypervisor Team</A
+></H3
+><DIV
+CLASS="AFFILIATION"
+><SPAN
+CLASS="ORGNAME"
+>	  <A
+HREF="http://www.ibm.com"
+TARGET="_top"
+>	    <SPAN
+CLASS="TRADEMARK"
+>IBM</SPAN
+>&reg; </A
+>
+	<BR></SPAN
+><SPAN
+CLASS="ORGDIV"
+>	  <A
+HREF="http://www.watson.ibm.com"
+TARGET="_top"
+> TJ Watson Research Center
+	  </A
+>
+	<BR></SPAN
+></DIV
+><SPAN
+CLASS="RELEASEINFO"
+>      Rev: $Revision Date: $Date$ User: $Author$
+    <BR></SPAN
+><P
+CLASS="COPYRIGHT"
+>Copyright &copy; 2005 by IBM Corp.</P
+><HR></DIV
+><DIV
+CLASS="TOC"
+><DL
+><DT
+><B
+>Table of Contents</B
+></DT
+><DT
+>1. <A
+HREF="#INTRO"
+>Introduction</A
+></DT
+><DT
+>2. <A
+HREF="#START"
+>Getting Started</A
+></DT
+><DD
+><DL
+><DT
+>2.1. <A
+HREF="#REFS"
+>Resource Reference</A
+></DT
+><DT
+>2.2. <A
+HREF="#TOOLS"
+>Required Tools</A
+></DT
+><DD
+><DL
+><DT
+>2.2.1. <A
+HREF="#RH"
+>For <SPAN
+CLASS="TRADEMARK"
+>Red Hat</SPAN
+>&reg; Linux</A
+></DT
+><DT
+>2.2.2. <A
+HREF="#WIN"
+>For Win32 distribution</A
+></DT
+></DL
+></DD
+></DL
+></DD
+><DT
+>3. <A
+HREF="#BUILD"
+>Building the White Papers</A
+></DT
+><DT
+>4. <A
+HREF="#NEW"
+>Adding a New White Paper</A
+></DT
+></DL
+></DIV
+><BLOCKQUOTE
+CLASS="ABSTRACT"
+><DIV
+CLASS="ABSTRACT"
+><A
+NAME="AEN23"><P
+></P
+><P
+>      This document attempts to describe and explain the process of
+      creating Hypervisor documents, both <SPAN
+CLASS="QUOTE"
+>"white papers"</SPAN
+> and
+      API documents will be discussed.  This document is a work in
+      progress and will evolve as the process develops.
+    </P
+><P
+></P
+></DIV
+></BLOCKQUOTE
+><DIV
+CLASS="SECTION"
+><HR><H1
+CLASS="SECTION"
+><A
+NAME="INTRO">1. Introduction</H1
+><P
+>      The Hypervisor group has chosen DocBook as the documentation
+      model. This means that our white papers are written in using
+      DocBook <SPAN
+CLASS="QUOTE"
+>"tags"</SPAN
+> and are currently in
+      <SPAN
+CLASS="QUOTE"
+>"SGML"</SPAN
+> files but can be easily migrated to
+      <SPAN
+CLASS="QUOTE"
+>"XML"</SPAN
+> since the same the DocBook Definition is
+      being used.  The process does take some learning, but we are
+      hoping it will be reasonably easy to enable all the features
+      that this model provides and at the same time make authoring as
+      simple as possible.
+    </P
+></DIV
+><DIV
+CLASS="SECTION"
+><HR><H1
+CLASS="SECTION"
+><A
+NAME="START">2. Getting Started</H1
+><P
+>      Writing and rendering a document using DocBook requires the use
+      of SGML/XML tags to mark regions of text and give them some
+      meaning, as well as a set of tools to render or build and
+      display the final output.
+    </P
+><DIV
+CLASS="SECTION"
+><HR><H2
+CLASS="SECTION"
+><A
+NAME="REFS">2.1. Resource Reference</H2
+><P
+>	There are several resources for DocBook that should be
+	useful. In particular you should be armed with at least the
+	<A
+HREF="http://www.oasis-open.org/docbook/documentation/reference/html/refelem.html"
+TARGET="_top"
+>	  <I
+CLASS="CITETITLE"
+>DocBook Element Reference</I
+>
+	</A
+> manual which is part of the
+	<A
+HREF="http://www.oasis-open.org/docbook/documentation/reference/html/docbook.html"
+TARGET="_top"
+>	  <I
+CLASS="CITETITLE"
+>DocBook: The Definitive Guide</I
+>
+	</A
+>.
+	You may also want to consider this
+	<A
+HREF="http://nis-www.lanl.gov/~rosalia/mydocs/docbook-intro/docbook-intro.html"
+TARGET="_top"
+>tutorial</A
+>
+	on getting started by Mark Galassi.
+      </P
+></DIV
+><DIV
+CLASS="SECTION"
+><HR><H2
+CLASS="SECTION"
+><A
+NAME="TOOLS">2.2. Required Tools</H2
+><P
+>	The tools necessary to author, build and render documents are
+	as follows:
+	<P
+></P
+><UL
+COMPACT="COMPACT"
+><LI
+><A
+NAME="ED"><P
+>	      A text editor such as:
+	      <A
+HREF="http://www.gnu.org/software/emacs/emacs.html"
+TARGET="_top"
+>Emacs</A
+>, <A
+HREF="http://www.xemacs.org"
+TARGET="_top"
+>XEmacs</A
+>, <I
+CLASS="CITEREFENTRY"
+><SPAN
+CLASS="REFENTRYTITLE"
+><B
+CLASS="COMMAND"
+>vi</B
+></SPAN
+></I
+>, or even <B
+CLASS="COMMAND"
+>notepad</B
+>.
+	    </P
+></LI
+><LI
+><P
+>	      A Diagramming package that can translate to
+	      <SPAN
+CLASS="ACRONYM"
+>EPS</SPAN
+> for <SPAN
+CLASS="TRADEMARK"
+>PostScript</SPAN
+>&reg; printing and
+	      <SPAN
+CLASS="ACRONYM"
+>JPEG</SPAN
+> or <SPAN
+CLASS="ACRONYM"
+>PNG</SPAN
+> for
+	      online publications.  Currently we support both
+	      <A
+HREF="http://www.xfig.org"
+TARGET="_top"
+>XFig/TransFig</A
+>, and
+		  <A
+HREF="http://www.lysator.liu.se/~alla/dia"
+TARGET="_top"
+>Dia</A
+>
+		  version 0.88.1 or greater.
+	    </P
+></LI
+><LI
+><P
+>	      A
+	      <I
+CLASS="CITEREFENTRY"
+><SPAN
+CLASS="REFENTRYTITLE"
+><B
+CLASS="COMMAND"
+>make</B
+></SPAN
+></I
+>
+	      program that drives the building process. Though almost
+	      any <B
+CLASS="COMMAND"
+>make</B
+> program will do, Hypervisor
+	      officially supports only <A
+HREF="http://www.gnu.org/software/make"
+TARGET="_top"
+>GNU
+	      Make</A
+>.
+	    </P
+></LI
+><LI
+><P
+>	      An implementation of <SPAN
+CLASS="ACRONYM"
+>DSSSL</SPAN
+>, a style
+	      language to format SGML or XML documents. There are two
+	      popular packages that perform this task:
+	      <A
+HREF="http://openjade.sourceforge.net"
+TARGET="_top"
+>OpenJade</A
+>, and James Clark's
+		  <A
+HREF="http://www.jclark.com/jade/"
+TARGET="_top"
+>Jade</A
+>
+	      . We currently use OpenJade version 1.3 or greater but
+	      they seem to be interchangeable.
+	    </P
+></LI
+><LI
+><A
+NAME="PSTOOLS"><P
+>	    If PostScript output is required then both a
+	      <A
+HREF="http://www.latex-project.org/"
+TARGET="_top"
+>LaTex</A
+>
+	      package that is Web2c based such as
+	      <A
+HREF="http://www.tug.org/teTeX/"
+TARGET="_top"
+>teTex</A
+>,
+	      and the
+	      <A
+HREF="http://jadetex.sourceforge.net/"
+TARGET="_top"
+>		jadeTex
+	      </A
+>
+	      package are required.
+	    </P
+></LI
+></UL
+>
+      </P
+><P
+>	Other tools, though not required, can make authoring a white
+	paper that much easier.  The use of the
+	<I
+CLASS="CITEREFENTRY"
+><SPAN
+CLASS="REFENTRYTITLE"
+><B
+CLASS="COMMAND"
+>nsgmls</B
+></SPAN
+></I
+>
+	command can check your document for errors without actually
+	rendering it.
+      </P
+><P
+>	If your editor of choice is Emacs or XEmacs, then you will
+	find that proper installation of the <A
+HREF="http://www.lysator.liu.se/~lenst/about_psgml"
+TARGET="_top"
+>PSGML</A
+>
+	, version 1.2.2 or later, to be invaluable.
+      </P
+><DIV
+CLASS="SECTION"
+><HR><H3
+CLASS="SECTION"
+><A
+NAME="RH">2.2.1. For <SPAN
+CLASS="TRADEMARK"
+>Red Hat</SPAN
+>&reg; Linux</H3
+><P
+>	  If you have a Red Hat Linux distribution then you can grab
+	  the following <SPAN
+CLASS="ACRONYM"
+>RPM</SPAN
+> packages and install
+	  them on your machine:
+	  <P
+></P
+><TABLE
+BORDER="0"
+><TBODY
+><TR
+><TD
+>	      <A
+HREF="http://rpmfind.net/linux/rpm2html/search.php?query=stylesheets"
+TARGET="_top"
+>		<SPAN
+CLASS="APPLICATION"
+>stylesheets-0.13rh-4
+		</SPAN
+>
+	      </A
+>
+	    </TD
+></TR
+><TR
+><TD
+>	      <A
+HREF="http://rpmfind.net/linux/rpm2html/search.php?query=openjade"
+TARGET="_top"
+>		<SPAN
+CLASS="APPLICATION"
+>openjade-1.3-6</SPAN
+>
+	      </A
+>
+	    </TD
+></TR
+><TR
+><TD
+>	      <A
+HREF="http://rpmfind.net/linux/rpm2html/search.php?query=jadetex"
+TARGET="_top"
+>		<SPAN
+CLASS="APPLICATION"
+>jadetex-2.7-4</SPAN
+>
+	      </A
+>
+	    </TD
+></TR
+><TR
+><TD
+>	      <A
+HREF="http://rpmfind.net/linux/rpm2html/search.php?query=tetex"
+TARGET="_top"
+>		<SPAN
+CLASS="APPLICATION"
+>tetex-1.0.6-10</SPAN
+>
+	      </A
+>
+	      and friends
+	    </TD
+></TR
+></TBODY
+></TABLE
+><P
+></P
+>
+	  <DIV
+CLASS="NOTE"
+><BLOCKQUOTE
+CLASS="NOTE"
+><P
+><B
+>Note: </B
+>	      All packages except for
+	      <A
+HREF="#STY"
+><I
+>stylesheets-0.13rh-4</I
+></A
+>
+	      are installed by default.
+	    </P
+></BLOCKQUOTE
+></DIV
+>
+
+	  These packages can be easily downloaded from
+	  <A
+HREF="rpm.url"
+TARGET="_top"
+>Rpmfind</A
+> website.
+	</P
+></DIV
+><DIV
+CLASS="SECTION"
+><HR><H3
+CLASS="SECTION"
+><A
+NAME="WIN">2.2.2. For Win32 distribution</H3
+><DIV
+CLASS="WARNING"
+><P
+></P
+><TABLE
+CLASS="WARNING"
+BORDER="1"
+WIDTH="100%"
+><TR
+><TD
+ALIGN="CENTER"
+><B
+>Warning</B
+></TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+><P
+>	    Though there are several native Win32 pacakges, the cygwin
+	    solution, which is known to work and is described here.
+	  </P
+></TD
+></TR
+></TABLE
+></DIV
+><DIV
+CLASS="NOTE"
+><BLOCKQUOTE
+CLASS="NOTE"
+><P
+><B
+>Note: </B
+>	    Only rendering to <SPAN
+CLASS="ACRONYM"
+>HTML</SPAN
+>,
+	    <SPAN
+CLASS="TRADEMARK"
+>MicroSoft Word</SPAN
+>&#8482; compatible
+	    <SPAN
+CLASS="ACRONYM"
+>RTF</SPAN
+> and <SPAN
+CLASS="TRADEMARK"
+>Adobe
+	    FrameMaker</SPAN
+>&#8482; <SPAN
+CLASS="ACRONYM"
+>MIF</SPAN
+> are known to
+	    work.  The pacakges necessary for rendering
+	    <SPAN
+CLASS="ACRONYM"
+>PS</SPAN
+> and <SPAN
+CLASS="ACRONYM"
+>PDF</SPAN
+> require
+	    manual building that is left as an exersize to the reader.
+	  </P
+></BLOCKQUOTE
+></DIV
+><P
+>	  If you have not discovered cygwin yet them go to <A
+HREF="cygwin.url"
+TARGET="_top"
+>http://cygwin.com</A
+>.  Click the <A
+HREF="cygwin.url/setup.exe"
+TARGET="_top"
+>"setup.exe"</A
+> link and this
+	  will install cygwin on you windows box, an exersize for the
+	  reader.
+	</P
+><P
+>	  Once you have cygwin installed, run the <A
+HREF="cygwin.url/setup.exe"
+TARGET="_top"
+>"setup.exe"</A
+> link again
+	  but this time when it asks you to choose the download site
+	  add the following URL
+	  <SPAN
+CLASS="QUOTE"
+>"http://anfaenger.de/cygwin"</SPAN
+> click
+	  <SPAN
+CLASS="GUIBUTTON"
+>add</SPAN
+> then <SPAN
+CLASS="GUIBUTTON"
+>next</SPAN
+>.
+	</P
+><P
+>	  Now you should then see a new packages list, look for and
+	  select the following packages <SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>only if you don't
+	  already have them installed</I
+></SPAN
+>:
+
+	  <P
+></P
+><UL
+COMPACT="COMPACT"
+><LI
+><P
+>		docbook-dsssl
+	      </P
+></LI
+><LI
+><P
+>		docbook-sgml
+	      </P
+></LI
+><LI
+><P
+>		docbook-xml
+	      </P
+></LI
+><LI
+><P
+>		docbook-xml42
+	      </P
+></LI
+><LI
+><P
+>		docbook-xsl
+	      </P
+></LI
+><LI
+><P
+>		openjade
+	      </P
+></LI
+><LI
+><P
+>		sgml-base
+	      </P
+></LI
+><LI
+><P
+>		tei-xml
+	      </P
+></LI
+><LI
+><P
+>		tei-xs
+	      </P
+></LI
+><LI
+><P
+>		xml-base
+	      </P
+></LI
+><LI
+><P
+>		xml
+	      </P
+></LI
+></UL
+>
+	</P
+><P
+>	  If you insist on using Win32 here is some more information.
+	  <P
+></P
+><UL
+COMPACT="COMPACT"
+><LI
+><P
+>		Your choice of editor is up to you, see
+		<A
+HREF="#ED"
+>editors</A
+> in
+		<A
+HREF="#TOOLS"
+>Section 2.2</A
+>.
+	      </P
+></LI
+><LI
+><P
+>		GNU Make is available from the
+		<A
+HREF="http://unxutils.sourceforge.net/"
+TARGET="_top"
+>		  Native Win32 ports of some GNU utilities
+		</A
+> site. This package is handy because it does
+		not require the
+		<A
+HREF="http://sourceware.cygnus.com/cygwin/"
+TARGET="_top"
+>		  cygwin
+		</A
+>
+		tools.
+	      </P
+></LI
+><LI
+><P
+>		OpenJade executable is available at the download
+		section of the
+		<A
+HREF="http://sourceforge.net/projects/openjade/"
+TARGET="_top"
+>		  sourceforge
+		</A
+>
+		site.
+	      </P
+></LI
+><LI
+><P
+>		DocBook style sheets are available at the download
+		section of the
+		<A
+HREF="http://sourceforge.net/projects/docbook/"
+TARGET="_top"
+>		  sourceforge
+		</A
+>
+		site.
+	      </P
+></LI
+></UL
+>
+	</P
+><P
+>	  It should also be possible to install the
+	  <A
+HREF="#PSTOOLS"
+>jadeTex</A
+>
+	  package on top of an installed LaTex distribution.
+	</P
+></DIV
+></DIV
+></DIV
+><DIV
+CLASS="SECTION"
+><HR><H1
+CLASS="SECTION"
+><A
+NAME="BUILD">3. Building the White Papers</H1
+><P
+>      All documents can be built in this directory by using the
+      <B
+CLASS="COMMAND"
+>make</B
+> command. The following targets are supported:
+      <P
+></P
+><UL
+COMPACT="COMPACT"
+><LI
+><P
+>	    <TT
+CLASS="OPTION"
+>all</TT
+> or <TT
+CLASS="OPTION"
+>default</TT
+>: build
+	    all known documents rendering only <SPAN
+CLASS="ACRONYM"
+>HTML</SPAN
+>.
+	  </P
+></LI
+><LI
+><P
+>	    <TT
+CLASS="OPTION"
+>html</TT
+>: build all <SPAN
+CLASS="ACRONYM"
+>HTML</SPAN
+>
+	    rederings of the documents.
+	  </P
+></LI
+><LI
+><P
+>	    <TT
+CLASS="OPTION"
+>ps</TT
+>: build only the PostScript output of
+	    the <TT
+CLASS="ENVAR"
+>DOCSRCS</TT
+> files.
+	  </P
+></LI
+><LI
+><P
+>	    <TT
+CLASS="OPTION"
+><TT
+CLASS="REPLACEABLE"
+><I
+>filename</I
+></TT
+>.[<SPAN
+CLASS="OPTIONAL"
+>html|rtf|mif|ps|pdf</SPAN
+>]</TT
+>:
+	    build only that single document.
+	  </P
+></LI
+><LI
+><P
+>	    <TT
+CLASS="OPTION"
+><TT
+CLASS="REPLACEABLE"
+><I
+>filename</I
+></TT
+></TT
+>:
+	    build only the <SPAN
+CLASS="ACRONYM"
+>HTML</SPAN
+> output of the document that
+	    <TT
+CLASS="FILENAME"
+><TT
+CLASS="REPLACEABLE"
+><I
+>filename</I
+></TT
+>.sgml</TT
+>
+	    represents.
+	  </P
+></LI
+></UL
+>
+    </P
+></DIV
+><DIV
+CLASS="SECTION"
+><HR><H1
+CLASS="SECTION"
+><A
+NAME="NEW">4. Adding a New White Paper</H1
+><P
+>      Adding a new white paper to this directory is rather simple in
+      comparison to authoring the actual paper. Just do the following:
+      <P
+></P
+><OL
+COMPACT="COMPACT"
+TYPE="1"
+><LI
+><P
+>	    Copy another similar document you wish to create, for
+	    example, use this file <TT
+CLASS="FILENAME"
+>ReadME.sgml</TT
+> to
+	    create a
+	    <TT
+CLASS="FILENAME"
+><TT
+CLASS="REPLACEABLE"
+><I
+>whitepaper</I
+></TT
+>.sgml</TT
+>.
+	  </P
+></LI
+><LI
+><A
+NAME="START.ADD"><P
+>	    Edit file to taste.
+	  </P
+></LI
+><LI
+><P
+>	    Build document periodically by entering
+	    <TT
+CLASS="USERINPUT"
+><B
+>	      <B
+CLASS="COMMAND"
+>make <TT
+CLASS="OPTION"
+><TT
+CLASS="REPLACEABLE"
+><I
+>whitepaper</I
+></TT
+></TT
+></B
+></B
+></TT
+>.
+
+	    This will build both <SPAN
+CLASS="ACRONYM"
+>HTML</SPAN
+> and
+	    PostScript.
+	  </P
+></LI
+><LI
+><A
+NAME="END.ADD"><P
+>	    View
+	    <TT
+CLASS="FILENAME"
+><TT
+CLASS="REPLACEABLE"
+><I
+>whitepaper</I
+></TT
+>.html</TT
+>
+	    with your favorite web browser or print or view, with
+	    <A
+HREF="ghostview"
+TARGET="_top"
+>GhostView</A
+>,
+	    <TT
+CLASS="FILENAME"
+><TT
+CLASS="REPLACEABLE"
+><I
+>whitepaper</I
+></TT
+>.ps</TT
+>.
+	  </P
+></LI
+><LI
+><P
+>	    Repeat steps
+	    <A
+HREF="#START.ADD"
+>2</A
+> to
+	    <A
+HREF="#END.ADD"
+>4</A
+> until finished.
+	  </P
+></LI
+></OL
+>
+    </P
+></DIV
+></DIV
+></BODY
+></HTML
+>

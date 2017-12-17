@@ -1,0 +1,941 @@
+<!--
+  (C) Copyright IBM Corp. 2004.
+  All Rights Reserved
+
+  $Id$
+-->
+<!DOCTYPE article PUBLIC "-//OASIS//DTD DocBook V3.1//EN" [
+
+<!-- To disable review comments replace INCLUDE with IGNORE -->
+<!ENTITY % review "INCLUDE" >
+
+<!-- CVS gives us these -->
+<!ENTITY release "$Id$">
+
+<!-- The actual meat of the Overview -->
+<!-- URLs handy for this document -->
+<!ENTITY gcc.url	"http://gcc.gnu.org">
+<!ENTITY gcc.long	"<ulink url='&gcc.url;'>GNU C Compiler</ulink>">
+<!ENTITY gcc	"<ulink url='&gcc.url;'><acronym>GCC</acronym></ulink>">
+<!ENTITY gdb.url	"http://sources.redhat.com/gdb">
+<!ENTITY gdb.long	"<ulink url='&gdb.url;'>GNU Project Debugger</ulink>">
+<!ENTITY gdb	"<ulink url='&gdb.url;'><acronym>GDB</acronym></ulink>">
+<!ENTITY cygwin.url	"http://www.cygwin.com">
+<!ENTITY cygwin	"<ulink url='&cygwin.url;'>Cygwin</ulink>">
+<!ENTITY osx.url	"http://www.apple.com/macosx">
+<!ENTITY osx	"<ulink url='&osx.url;'>Mac OS X</ulink>">
+<!ENTITY gnu.url	"http://www.gnu.org">
+<!ENTITY make.url	"&gnu.url/software/make">
+<!ENTITY make.long "<ulink url='&make.url;'>GNU Make</ulink>">
+<!ENTITY make "<ulink url='&make.url;'>Make</ulink>">
+<!ENTITY autoconf.url	"&gnu.url/software/autoconf">
+<!ENTITY autoconf.long "<ulink url='&autoconf.url;'>GNU Autoconf</ulink>">
+<!ENTITY autoconf "<ulink url='&autoconf.url;'>Autoconf</ulink>">
+<!ENTITY automake.url	"&gnu.url/software/automake">
+<!ENTITY automake.long "<ulink url='&automake.url;'>GNU Automake</ulink>">
+<!ENTITY binutils.url	"&gnu.url/software/binutils">
+<!ENTITY cvs.url	"https://www.cvshome.org/">
+<!ENTITY cvs.long	"<ulink url='&cvs.url;'>Concurrent Versions System</ulink>">
+<!ENTITY cvs	"<ulink url='&cvs.url;'>CVS</ulink>">
+<!ENTITY xen.url	"http://www.cl.cam.ac.uk/Research/SRG/netos/xen">
+<!ENTITY xen.long	"<ulink url='&xen.url;'>Xen Virtual Machine Monitor</ulink>">
+<!ENTITY xen	"<ulink url='&xen.url;'>Xen</ulink>">
+<!ENTITY denali.url	"http://denali.cs.washington.edu/">
+<!ENTITY denali.long	"<ulink url='&denali.url;'>Lightweight virtual machines for distributed and networked systems</ulink>">
+<!ENTITY denali	"<ulink url='&denali.url;'>Denali</ulink>">
+<!ENTITY bochs.url	"http://bochs.sourceforge.net/">
+<!ENTITY bochs.long	"<ulink url='&bochs.url;'>BOCHS IA-32 Emulator Project</ulink>">
+<!ENTITY bochs	"<ulink url='&bochs.url;'>BOCHS</ulink>">
+<!ENTITY qemu.url	"http://fabrice.bellard.free.fr/qemu/">
+<!ENTITY qemu.long	"<ulink url='&qemu.url;'>QEMU CPU Emulator</ulink>">
+<!ENTITY qemu	"<ulink url='&qemu.url;'>QEMU</ulink>">
+<!ENTITY mambo.url	"http://mambo.austin.ibm.com">
+<!ENTITY mambo	"<ulink url='&mambo.url;'>Mambo</ulink>">
+<!ENTITY vmware.url	"http://www.vmware.com">
+<!ENTITY vmware	"<ulink url='&vmware.url;'>VMware</ulink>">
+<!ENTITY k42.url	"http://www.research.ibm.com/k42">
+<!ENTITY k42.long	"<ulink url='&k42.url;'>K42 Project</ulink>">
+<!ENTITY k42	"<ulink url='&k42.url;'>K42</ulink>">
+
+
+<!-- Short Hand -->
+<!ENTITY HV	"Hypervisor">
+<!ENTITY RH	"Research &HV;">
+<!ENTITY RHP	"&RH; Project">
+<!ENTITY VM	"Virtual Machine">
+<!ENTITY OS	"Operating System">
+<!ENTITY ISA	"<acronym>ISA</acronym>">
+<!ENTITY intel	"<trademark class='registered'>Intel</trademark>">
+
+]>
+
+<article status="draft" lang="en">
+  <artheader>
+    <title>&RH; Hackers Guide</title>
+    <releaseinfo>
+      &release;
+    </releaseinfo>
+    <abstract>
+      <para>
+	This document is intended for programmers who wish to
+	discuss the code of the &RHP;.  It also attempts to
+	introduce the hopes and dreams of the maintainers of the code
+	that, hopefully, will make those dreams a reality.
+      </para>
+    </abstract>
+  </artheader>
+
+  <section>
+    <title>Introduction</title>
+    <para>
+      The &RHP; creates a &HV; environment that is suitable for
+      Client &OS; that have had minor changes applied to them in order
+      to run on the small number of machine abstractions the &HV;
+      presents.  This is different than &HV;s that emulate the
+      hardware completely so that no modifications to the Client &OS;
+      are necessary.  &RHP; uses what is popularly known as
+      <quote>Para-Virtualization</quote>.
+      <footnote>
+	<para>
+	  Although the term originated with the &denali; the method
+	  has been used by several VMM projects.
+	</para>
+      </footnote>
+    </para>
+    <para>
+      The main objective of this project is to create a coding base by
+      which the &HV; that is designed is easily portable to other
+      Instruction Set Architectures (&ISA;) as well be customized to
+      target a specific implementation of an &ISA; and therefore keep
+      the resulting code and binary as small as possible.
+    </para>
+  </section>
+
+  <section>
+    <title>Tool-chain</title>
+    <para>
+      The &RHP; is dedicated to the Open Source Movement and restricts
+      it primarily supports the features supported by popular Open
+      Source Friendly tools.  The tools that are needed to get, configure,
+      build and test the &RH; is as follows:
+      <variablelist>
+	<varlistentry>
+	  <term>Source Controller Manager</term>
+	  <listitem>
+	    <para>
+	      Unless you got this from a tarball, you are probably
+	      already familiar with our current <acronym>SCM</acronym>
+	      which is (for various reasons) <ulink
+	      url="&cvs.url;">CVS</ulink>.  Anonymous access to the
+	      repository is available to all and instructions can be
+	      found on the project web page. Developer access is
+	      restricted using SSH accounts in order to accept CVS
+	      commits <quote>if you have to ask.. you'll never
+	      know</quote>.
+	    </para>
+	  </listitem>
+	</varlistentry>
+	<varlistentry>
+	  <term>Compiler</term>
+	  <listitem>
+	    <para>
+	      Though the project adheres to the <emphasis>ANSI
+	      C99</emphasis> compiler, our <emphasis>reference
+	      compiler</emphasis> is the &gcc.long; and we use many
+	      extensions that this compiler provides.  However, in the
+	      case where &gcc; allows several ways to do something
+	      (eg. structure initializer notation) but the ANSI C99
+	      Specification is explicit, the ANSI Spec shall be used.
+	    </para>
+	  </listitem>
+	</varlistentry>
+	<varlistentry>
+	  <term>Linker, Assembler and Object Tools</term>
+	  <listitem>
+	    <para>
+	      The project uses and adheres to the System V ELF ABI as
+	      defined for the processor that it is targeting.  The
+	      tools for generating and manipulating these object files
+	      are supplied but the <ulink url="&binutils.url;">GNU
+	      Binutils</ulink> package.
+	    </para>
+	  </listitem>
+	</varlistentry>
+	<varlistentry>
+	  <term>Cross Toolchain</term>
+	  <listitem>
+	    <para>
+	      It is expected that anytime the above tool-chain is
+	      available to generate code for another host it is
+	      expected to be use by &RH;.  In fact most developers
+	      usually build using Cross Compilers.
+	    </para>
+	    <para>
+	      Any toolchain (cross or not) that is capable of building
+	      a Linux kernel should be able to build &RH;.  However,
+	      the ELF specific tool-chain configurations (such as
+	      i686-elf or powerpc-elf) are much simpler to build and
+	      can be easily hosted on alternate development
+	      environments including Apple's &osx; and &cygwin; and
+	      for this reason, their use is encouraged.
+	      <warning>
+		<para>
+		  It is known issue that the powerpc64-elf tool-chain
+		  configuration has yet to exist for GCC, which is sad
+		  since the powerpc64-linux GCC is the hardest to
+		  build.
+		</para>
+	      </warning>
+	    </para> 
+	  </listitem>
+	</varlistentry>
+	<varlistentry>
+	  <term>Configuration</term>
+	  <listitem>
+	    <para>
+	      The &autoconf.long;
+	      <footnote>
+		<para>
+		  Yes we do use Autoconf, but there are no plans to
+		  try to use its <quote>evil</quote> cousin
+		  &automake.long; since the maintainers believe
+		  <emphasis>(perhaps erroneously)</emphasis> that
+		  this tool is incapable of easily describing the
+		  configuration that has been designed.
+		</para>
+	      </footnote> 
+
+	      configuration tool is used in order describe the
+	      specific processor and machine environment that &RH;
+	      will be hosted on.  Currently Autoconf Ver. 2.13 is only
+	      supported, it is a low priority task to update to the
+	      latest version.
+	    </para>
+	    <para>
+	      The resulting <command>configure</command> script
+	      depends on a small Unix like environment that is
+	      restricted to POSIX features and any dependencies on
+	      specific GNU extensions of those commands is purely
+	      accidental.
+	    </para>
+	  </listitem>
+	</varlistentry>
+	<varlistentry>
+	  <term>Build</term>
+	  <listitem>
+	    <para>
+	      &RH; uses the &make.long;, currently the known minimal
+	      version is 3.79.1.
+	      <note>
+		<para>
+		  It is a known problem that the current Makefiles do
+		  not support &RH; to be built in parallel.  It is also
+		  desirable to design a Makefile infrastructure that is
+		  not recursive.  If these topics interest you please
+		  contact a maintainer.
+		</para>
+	      </note>
+	    </para>
+	  </listitem>
+	</varlistentry>
+	<varlistentry>
+	  <term>Running</term>
+	  <listitem>
+	    <para>
+	      Currently the resulting binary <command>hype</command>
+	      gets created in several forms that is usable by several
+	      systems and simulators.  &RH; runs on various hardware
+	      <footnote>
+		<para>
+		  A complete list is forthcoming.
+		</para>
+	      </footnote>
+
+	      machines.  The project members acknowledge that it is
+	      advantageous to be able to run on a simulator while
+	      developing for &RH;.  Simulators generally allow you to
+	      run a specific build of &RH; anywhere as well as supply
+	      the developer with a machine level hook to debug the
+	      entire system.  Frequently it is desirable to debug &RH;
+	      in this manner if the bug can be reproduced in the
+	      simulated environment.
+	    </para>
+	    <para>
+	      The current X86 &RH; is known to work on &bochs; and
+	      &qemu; full system simulators and both run on several
+	      platforms.
+	      <note>
+		<para>
+		  It has also been shown that the &RH; can run in a
+		  &vmware; partition.
+		</para>
+	      </note>
+	    </para>
+	    <para>
+	      The current PPC &RH; runs on the &mambo; 970 simulator
+	      that is currently available in binary only form.
+	    </para>
+	  </listitem>
+	</varlistentry>
+	<varlistentry>
+	  <term>Thinwire</term>
+	  <listitem>
+	    <para>
+	      Thinwire
+	      <footnote>
+		<para>
+		  Thinwire is part of the &k42; project but is
+		  available for use by other programs such as &RH;.
+		</para>
+	      </footnote>
+
+	      is a character IO transport that can use any single
+	      transport to multiplex/de-multiplex several channels of
+	      character IO.  The protocol is a designed to work under
+	      the worst conditions and is therefore slow and suitable
+	      only for character IO.  The transports used by Thinwire
+	      vary from <acronym>UART</acronym>s for HW, sockets for
+	      &mambo;, <acronym>PTY</acronym>s for &bochs;.
+	    </para>
+	    <para>
+	      The other side of the transport will take all
+	      the channels that are in use and open a listening socket
+	      using a port value that is the channel number plus some
+	      base offset.  This listening socket can then be attached
+	      to with <command>telnet</command>, &gdb; or any other
+	      program that can interact with a socket to communicate
+	      with a channel source within the &HV;.
+	    </para>
+	  </listitem>
+	</varlistentry>
+	<varlistentry>
+	  <term>Debugger</term>
+	  <listitem>
+	    <para>
+	      The project is closely tied with to the &gdb.long; which
+	      can be built as a cross platform debugger but more
+	      importantly is capable of debugging remote victims.
+	      Most of the Simulators used by this project allow for
+	      &gdb; to control the simulated software.  When on HW,
+	      the &HV; core is completely debugable using a Thinwire
+	      channel or other transport.
+	      <note>
+		<para>
+		  The HW debugging is currently possible for PowerPC
+		  targets and the x86 work is in progress.
+		</para>
+	      </note>
+	    </para>
+	  </listitem>
+	</varlistentry>
+      </variablelist>
+    </para>
+  </section>
+	  
+  <section>
+    <title>The Source Tree Layout</title>
+    <para>
+      &RH; source tree is organized with the following objectives in mind:
+      <orderedlist>
+	<listitem>
+	  <para>
+	    Isolation of the different modules. The source tree
+	    contains
+	    <simplelist type="inline">
+	      <member>Build tools</member>
+	      <member>TestOSes</member>
+	      <member>plugins</member>
+	      <member>and the &HV; core</member>
+	    </simplelist> it is desirable to isolate the code that is
+	    independent to the module and place the shared code in the
+	    top level areas.
+	  </para>
+	</listitem>
+	<listitem>
+	  <para>
+	    Maximal use of code sharing.  Where generic code would be
+	    automatically used unless a more customized
+	    implementations exists.
+	  </para>
+	</listitem>
+	<listitem>
+	  <para>
+	    To easily and accurately build the smallest most efficient
+	    &HV; where the source files that are use to create it can
+	    be easily identified and audited for security purposes.
+	  </para>
+	</listitem>
+      </orderedlist>
+    </para>
+    <section>
+      <title>Source Directory Skeletons</title>
+      <para>
+	The core &HV; is concerned with the partitioning of memory and
+	the accurate <quote>time-slicing</quote> of the processors.
+	Therefore the &HV; must not only be aware of the differences
+	in the &ISA;, but must be particularly aware of the
+	differences between the specific chip implementation.  For
+	this reason we have organized the code in order to handle the
+	<quote>grey area</quote> that represents the similarities and
+	differences within the &ISA;.
+	<note>
+	  <para>
+	    The directory structure is intended to only differentiate
+	    between the processor features that allow for the
+	    management of memory and scheduling.  Code that handles
+	    processor features that are not specific to the
+	    <emphasis>core implementation</emphasis> should be
+	    selected by the configuration system separately.  An
+	    example of this type of code would be the source that
+	    saves and restores the <acronym>VMX</acronym>
+	    <acronym>PPC</acronym> or the <acronym>MMX2</acronym>
+	    <acronym>IA32</acronym> registers.
+	  </para>
+	</note>
+      </para>
+      <para>
+	The basic directory structure can be represented by the following:
+	<blockquote>
+	  <para>
+	    <filename class="directory">./<replaceable>module</replaceable>/<replaceable>ISA</replaceable>/<replaceable>word-size</replaceable>/<replaceable>core</replaceable>/</filename>
+	  </para>
+	</blockquote>
+
+	The structure allows for a specific implementation of any
+	programming interface to be customized down to the definition
+	in the <filename
+	class="directory"><replaceable>core</replaceable>/</filename>
+	directory.
+
+	Each directory component is described below.
+      </para>
+      <section>
+	<title><filename class="directory">./<replaceable>module</replaceable>/</filename></title>
+	<para>
+	  This is the top-level of every module and the point where
+	  code begins to appear.  Prototypes of interfaces and type
+	  definitions that are intended to be the same for all
+	  architectures are defined at this level.
+	  <note>
+	    <para>
+	      Assembler files are rare at this level, and could only
+	      be present if it defines a data area or the text defined
+	      uses CPP macros that are defined for use at this level.
+	    </para>
+	  </note>
+
+	  When the object tree (a.k.a. the <quote>build tree</quote>)
+	  has been configured and built for a specific machine, the
+	  objects and resulting binaries can be found at this level.
+	</para>
+      </section>
+      <section>
+	<title><filename class="directory">./<replaceable>module</replaceable>/<replaceable>ISA</replaceable>/</filename></title>
+	<para>
+	  The <replaceable>ISA</replaceable> directory is our first
+	  level of specificity.  It is here that the instruction set
+	  and architected registers by the processor are known and
+	  assembler statements in C files and assembler files begin to
+	  appear.
+	</para>
+	<para>
+	  The name used should describe the architecture in its most
+	  generic form.  Currently <filename
+	  class="directory">powerpc/</filename> and <filename
+	  class="directory">x86</filename> are used to differentiate
+	  the use of those architectures.
+	  <note>
+	    <para>
+	      In the case of the &intel; 64 bit architecture, it is
+	      expected that there would be an <filename
+	      class="directory">./<replaceable>module</replaceable>/ia64/</filename>
+	      directory introduced at this point, since it does define
+	      a new architecture that only has a 64 bit
+	      implementation.
+	    </para>
+	  </note>
+	</para>
+      </section>
+      <section>
+	<title><filename class="directory">./<replaceable>module</replaceable>/<replaceable>ISA</replaceable>/<replaceable>word-size</replaceable>/</filename></title>
+	<para>
+	  The <replaceable>word-size</replaceable> directory is where
+	  the <quote>native machine word size</quote> is defined.  Any
+	  any differences in the architecture relating to the code
+	  that executes to take advantage of this difference.
+	</para>
+	<para>
+	  Currently, the expectation is that we are only running
+	  processors that are capable of 32 or 64 bits or both.
+	  <footnote>
+	    <para>
+	      Yes, we acknowledge the existence of machines like
+	      PDP-11s that have been wire wrapped to have an 18 bit
+	      bus, we eagerly await the patch submission for this
+	      machine and others like it so we can giggle
+	      uncontrollably.
+	    </para>
+	  </footnote>
+	  <important>
+	    <para>
+	      It is by <emphasis>design</emphasis> that the code
+	      assumes that this <quote>machine word</quote> is the
+	      most efficient arithmetic integer size, is sufficient to
+	      access all of addressable memory from the view of the
+	      software program and can be expressed by a C pointer
+	      type and the project base type
+	      <structname>uval</structname>. See Base Types below.
+	    </para>
+	  </important>
+
+	  The above assumption contribute to a programming model that
+	  maximizes the portability objectives of &RH; and is
+	  independent of the model used by the OSes running on top of
+	  &HV;.  However, it does specify the the use of registers
+	  when an OS makes a call into the &HV;.
+	  <note>
+	    <para>
+	      In the case of the 64 bit extensions of the &intel; x86
+	      architecture, it is expected that any 64 bit
+	      specific details would be introduced in <filename
+	      class="directory">./<replaceable>module</replaceable>/x86/64/</filename>.
+	    </para>
+	  </note>
+	  <note>
+	    <para>
+	      It is expected that any differences between the two
+	      known 64 bit x86 architecture extensions (i.e. &intel;
+	      EM64T and AMD Athelon/Hammer) shall be introduced in at
+	      this level since they are indeed architecture.  However,
+	      specific core details would appear in the
+	      <replaceable>core</replaceable> directories below.
+	    </para>
+	  </note>
+	</para>
+      </section>
+      <section>
+	<title><filename class="directory">./<replaceable>module</replaceable>/<replaceable>ISA</replaceable>/<replaceable>word-size</replaceable>/<replaceable>core</replaceable>/</filename></title>
+	<para>
+	  This directory contains the lowest order code.  The code
+	  here represents the <emphasis>on chip</emphasis> nuances,
+	  errata, work-a-rounds, of a specific implementation,
+	  examples include:
+	  <itemizedlist>
+	    <listitem>
+	      <formalpara>
+		<title>Errata and other work-a-round</title>
+		<para>
+		  Examples:
+		  <simplelist type="inline">
+		    <member>
+		      a register that needs to be read multiple times
+		      before it is valid
+		    </member>
+		    <member>
+		      arcane initialization sequences
+		    </member>
+		    <member>
+		      and clocks that have variable updates
+		    </member>
+		  </simplelist>
+		  .
+		</para>
+	      </formalpara>
+	    </listitem>
+	    <listitem>
+	      <formalpara>
+		<title>Cache, TLB organization</title>
+		<para>
+		  Including
+		  <simplelist type="inline">
+		    <member>size</member>
+		    <member>geometry</member>
+		    <member>coherency</member>
+		    <member>and various methods to manipulate it</member>
+		  </simplelist>
+		  .
+		</para>
+	      </formalpara>
+	    </listitem>
+	    <listitem>
+	      <formalpara>
+		<title>Other details</title>
+		<para>
+		  Including
+		  <simplelist type="inline">
+		    <member>
+		      number of processor level threads
+		    </member>
+		    <member>
+		      yada yada
+		    </member>
+		  </simplelist>
+		  .
+		</para>
+	      </formalpara>
+	    </listitem>
+	  </itemizedlist>
+	</para>
+      </section>
+    </section>
+    <section>
+      <title>Modules</title>
+      <para>
+	The project is currently broken up into the following
+	directories that represent these <quote>modules</quote>.
+      </para>
+      <section>
+	<title>The Root Directory <filename class="directory">./</filename>
+	</title>
+	<para>
+	  Starting at the top level the source tree we find the
+	  introductory files to the source:
+	  <variablelist>
+	    <varlistentry>
+	      <term><filename>./DeadDirs</filename></term>
+	      <listitem>
+		<para>
+		  One of the problems with &cvs; is that it does not
+		  handle the removal of directories very well.  So
+		  when a directory <emphasis>is</emphasis> removed it
+		  needs to be removed from the repository and then all
+		  developers that have commit access must remove the
+		  directories in their own workspace.  This will stop
+		  the developer from accidentally reintroducing the
+		  directory.  Since this happens infrequently we keep
+		  track of the directories we wish to delete (during
+		  some synchronization point) in this file.
+		</para>
+	      </listitem>
+	    </varlistentry>
+	    <varlistentry>
+	      <term><filename>./autogen.sh</filename></term>
+	      <listitem>
+		<para>
+		  When a configure file or fragment is changed, that
+		  is most files that end in
+		  <quote><filename>.in</filename></quote>, the
+		  <filename>autogen.sh</filename> shell script will
+		  verify that the correct &autoconf; version will be
+		  used and will run &autoconf; on all newer
+		  configuration files in order to produce a final
+		  <command>configure</command> script that is then
+		  checked into the repository so that regular builders
+		  of the project need not generate these files
+		  themselves.
+		  <note>
+		    <para>
+		      This is the only program that actually makes
+		      changes in the source tree and is really the
+		      only <emphasis>exception</emphasis> to not
+		      placing generated code in the source tree.
+		    </para>
+		  </note>
+
+		  It is desirable to first check in the
+		  <quote><filename>.in</filename></quote> files into
+		  the repository, rerun
+		  <filename>autogen.sh</filename> and then check in
+		  the result.  This will allow the generated scripts
+		  to have matching SCM numbers to the
+		  <quote><filename>.in</filename></quote> file that it
+		  was sourced from.
+		</para>
+	      </listitem>
+	    </varlistentry>
+	  </variablelist>
+	</para>
+      </section>
+      <section>
+	<title><filename class="directory">./hype/</filename></title>
+	<para>
+	  The <filename class="directory">./hype/</filename> directory
+	  contains all sources that execute in the processor modes
+	  designated as the domain of the &HV;.
+	</para>
+      </section>
+      <section>
+	<title>
+	  <filename class="directory">./lib/</filename>
+	  and
+	  <filename class="directory">./include/</filename>
+	</title>
+	<para>
+	  The <filename class="directory">./lib/</filename> directory
+	  is where the <filename>libhype.a</filename> static library
+	  is defined.  The library is intended for code that is used
+	  by more that one module.  The interfaces provided by
+	  <filename>libhype.a</filename> are as follows.
+	  <itemizedlist>
+	    <listitem>
+	      <formalpara>
+		<title>Partial Standard C Library</title>
+		<para>
+		  Obviously, not the complete library, but only those
+		  interfaces that are either required by the complier
+		  (<function>memcpy(3)</function>) or used by one or
+		  more of the modules
+		  (<function>snprintf(3)</function>).
+		</para>
+	      </formalpara>
+	    </listitem>
+	    <listitem>
+	      <formalpara>
+		<title>OS Level Interfaces</title>
+		<para>
+		  Contains interfaces that are the domain of the OSes
+		  that run on top of &HV;.  Some of these interfaces
+		  and definitions are shared by both &HV; and the
+		  OSes but they mainly exist for the OSes in the
+		  <filename class="directory">./test/</filename>.
+		</para>
+	      </formalpara>
+	    </listitem>
+	  </itemizedlist>
+	  <note>
+	    <para>
+	      It is the hope of the maintainers to separate out the
+	      above functionality into two separate libraries.
+	      Unfortunately, the rules of binding several static ELF
+	      libraries make the act of linking cumbersome and the
+	      separation non-trivial.
+	    </para>
+	  </note>
+	</para>
+	<para>
+	  The <filename class="directory">./include/</filename>
+	  directory contains the function prototypes and data
+	  definitions that exist and used by the <filename
+	  class="directory">./lib/</filename> directory.
+	</para>	  
+      </section>
+      <section>
+	<title><filename class="directory">./test/</filename></title>
+	<para>
+	  The <filename class="directory">./test/</filename> directory
+	  contains a set of Small Client OS images that are designed
+	  to test atomic features of the core &HV;.  The Tesing OSes
+	  are often referred to as <quote>ToyOSes</quote> and are
+	  designed to be written <emphasis>almost</emphasis> like
+	  standard C applications.
+	</para>
+	<para>
+	  The specifics of this programming model is as follows:
+	  <itemizedlist>
+	    <listitem>
+	      <formalpara>
+		<title>OS Startup</title>
+		<para>
+		  In much the same way that a C application starts
+		  execution by the system calling
+		  <function>main()</function>, TestOSes have the
+		  function called by the startup system called
+<!-- <xref linkend="test_os"> Not sure is I want a manpage for this yet. -->
+		  <funcsynopsis>
+		    <funcprototype>
+		      <funcdef>uval <function>test_os</function></funcdef>
+		      <paramdef>uval <parameter>argc</parameter></paramdef>
+		      <paramdef>uval <parameter>argv[]</parameter></paramdef>
+		    </funcprototype>
+		  </funcsynopsis>
+		  where:
+		  <itemizedlist>
+		    <listitem>
+		      <para>
+			The value of <parameter>argc</parameter>
+			is number of array elements in
+			<parameter>argv</parameter>
+		      </para>
+		    </listitem>
+		    <listitem>
+		      <para>
+			<parameter>argv[argc]</parameter> is zero.
+		      </para>
+		    </listitem>
+		    <listitem>
+		      <para>
+			If <parameter>argc</parameter> is greater than
+			zero then the array values from
+			<parameter>argv[0]</parameter> through
+			<parameter>argv[argc - 1]</parameter>
+			represent the initial register state of the
+			native OS environment.
+		      </para>
+		    </listitem>
+		    <listitem>
+		      <para>
+			When function returns, the return values is
+			reported to the console of the TestOS and then
+			request that the system terminate it.  While
+			awaiting termination the TestOS simply
+			<emphasis>yields</emphasis> in a loop.
+		      </para>
+		    </listitem>
+		  </itemizedlist>
+		</para>
+	      </formalpara>
+	    </listitem>
+	    <listitem>
+	      <formalpara>
+		<title>Programmable Exception/Interrupt handlers</title>
+		<para>
+		  <warning>
+		    <para>
+		      As of this writing, the programmability of the
+		      exceptions handlers is incomplete.  The
+		      following discusses what the model is intended
+		      to be and how it is currently implemented for
+		      PowerPC.
+		    </para>
+		  </warning>
+		  
+		  An array of vectors has been created called
+		  <varname>xh_table</varname>, each array entry
+		  contains a pointer to a function that handles a
+		  particular exception.  If the entry contains a NULL
+		  pointer, the exception will be ignored.
+		  <warning>
+		    <para>
+		      An <quote>ignored exception</quote> should be an
+		      exception that does not require quiecing, such
+		      as a timer interrupt.
+		    </para>
+		  </warning>
+		  
+		  The exception handler function should be defined as
+		  follows:
+		  <funcsynopsis>
+		    <funcprototype>
+		      <funcdef>uval <function>xh_handler</function></funcdef>
+		      <paramdef>uval <parameter>ex</parameter></paramdef>
+		      <paramdef>uval <parameter>*regs</parameter></paramdef>
+		    </funcprototype>
+		  </funcsynopsis>
+		  where:
+		  <itemizedlist>
+		    <listitem>
+		      <formalpara>
+			<title><parameter>ex</parameter></title>
+			<para>
+			  is a unique value that identifies the
+			  specific exceptions which could be an
+			  address or some <acronym>IRQ</acronym>
+			  value.  This parameter allows for a single
+			  function to possibly handle several
+			  exceptions.
+			</para>
+		      </formalpara>
+		    </listitem>
+		    <listitem>
+		      <formalpara>
+			<title><parameter>regs</parameter></title>
+			<para>
+			  contains the register set of the processor
+			  (or thread) at the time of the
+			  exception. The order of entries is &ISA;
+			  dependent and the index values can be found
+			  in
+			  <filename>./test/<replaceable>ISA</replaceable>/xh.h</filename>.
+			</para>
+		      </formalpara>
+		    </listitem>
+		  </itemizedlist>
+		  <filename>./test/powerpc/decbouce.c</filename> is an
+		  example of how the PowerPC decrementer handler is
+		  installed and used.
+		</para>
+	      </formalpara>
+	    </listitem>
+	    <listitem>
+	      <formalpara>
+		<title>Memory Mapping</title>
+		<para>
+		  TestOSes are small enough to run completely without
+		  translation, with minimal translation (one PTE),
+		  translated with a supported page size other than the
+		  standard 4k.  There is a global variable called
+		  <varname>do_map_myself</varname>, it has a
+		  <emphasis>weak</emphasis> default definition of 1,
+		  which means that the default behavior of a TestOS is
+		  to run in <quote>translated mode</quote>.
+		</para>
+	      </formalpara>
+	    </listitem>
+	  </itemizedlist>
+	  
+	  the most important of them all is
+	  <command>controller</command>.
+	</para>
+	<section>
+	  <title><filename>./test/controller</filename></title>
+	  <para>
+	    The Controlling OS is the only OS that the core &HV; is
+	    capable of loading.  It is expected to be a binary
+	    <acronym>WOS</acronym>
+	    <footnote>
+	      <para>
+		Wad O' Stuff
+	      </para>
+	    </footnote> 
+	  
+	    which is free of any ELF like file information.
+	    Hypervisor expects to simply copy it into the first
+	    partitioned area of memory and execute it at a known
+	    location (normally <constant>0x0</constant>) and an agreed
+	    upon initial register state, which is &ISA; specific.
+	    This ensures that &HV; is free of any knowledge of file
+	    formats and simply consideres a well defined series of
+	    bits.
+	    <note>
+	      <para>
+		The configuration system allows you to choose an
+		alternate Controlling OS by using the
+		<parameter>--with-controller=<replaceable>OS
+		    Image</replaceable></parameter>.  However, the
+		<replaceable>OS Image</replaceable> must loadable and
+		executable in the same way that
+		<command>controller</command> is.
+	      </para>
+	    </note>
+	  
+	    By default the Controlling OS for &RH; is
+	    <command>controller</command>.
+	  </para>
+	  <para>
+	    The remainder of the Test OSes are collected together and
+	    used to create and linkable object that represents an
+	    array that contains the complete ELF image and a name
+	    associated with it.  This linkable object is then linked
+	    into <command>controller</command> so controller can
+	    create a new partition and load the Image into the
+	    partition and cause it to be scheduled as specified by its
+	    ELF information.
+	  
+	    <note>
+	      <para>
+		It is possible to add other OS Images from
+		<quote>outside</quote> the project area (such as a
+		bootable Linux Kernel) and have it added to the list
+		of OSes that controller can spawn
+		<command>controller</command>.  You can specify a list
+		of external images by using the configure option
+		<parameter>--with-controller-images=<replaceable>FILE1<optional>,FILE2,...</optional></replaceable></parameter>
+	      </para>
+	    </note>
+	  </para>
+	</section>
+      </section>
+      <section>
+	<title><filename class="directory">./pluggins/</filename></title>
+	<para>
+	</para>
+      </section>
+    </section>
+  </section>
+  <section>
+    <title>Build and Configuration</title>
+    <para>
+      &RH; uses the &make.long; (Minimum Version 3.79.1) and 
+    </para>
+  </section>
+</article>

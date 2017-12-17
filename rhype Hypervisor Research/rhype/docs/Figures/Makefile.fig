@@ -1,0 +1,94 @@
+#
+# Copyright (C) 2005 Jimi Xenidis <jimix@watson.ibm.com>, IBM Corporation
+#
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 2 of the License, or
+# (at your option) any later version.
+# 
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+# 
+# You should have received a copy of the GNU General Public License
+# along with this program; if not, write to the Free Software
+# Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307 USA
+# $Id$
+#
+
+
+# Tools
+FIG2x=fig2dev		# fig translator
+FIGMAG=-m 1.5
+FIG2gif=$(FIG2x) -L gif $(FIGMAG)
+FIG2jpg=$(FIG2x) -L jpeg $(FIGMAG)
+FIG2png=$(FIG2x) -L png
+FIG2pdf=$(FIG2x) -L pdf
+FIG2eps=$(FIG2x) -L eps
+FIG2pcx =$(FIG2x) -L pcx
+FIG2ps =$(FIG2x) -L ps
+DOT2x = dot
+DIA2x=dia --nosplash	# dia translator
+
+#
+# uudecode rules
+#
+figures/%.gif: figures/%.ugif
+	uudecode -o $@ $<
+
+#
+# Dot rules
+#
+%.jpg: %.dot
+	$(DOT2x) -Tjpg $< -o $@
+%.png: %.dot
+	$(DOT2x) -Tpng $< -o $@
+%.gif: %.dot
+	$(DOT2x) -Tgif $< -o $@
+%.eps %.ps: %.dot
+	$(DOT2x) -Tps $< -o $@
+
+#
+# XFig rules
+#
+%.gif: %.fig
+	$(FIG2gif) $< $@
+
+%.jpg: %.fig
+	$(FIG2jpg) $< $@
+
+%.png: %.fig
+	$(FIG2png) $< $@
+
+%.pdf: %.fig
+	$(FIG2pdf) $< $@
+
+%.pcx: %.fig
+	$(FIG2pcx) $< $@
+
+%.eps: %.fig
+	$(FIG2eps) $< $@
+
+#
+# Dia rules
+#
+%.jpg %.png %.eps : %.dia
+	$(DIA2x) --export=$@ $<
+
+#
+# IDraw rules (Native form is EPS compatible)
+#
+%.eps: %.iv
+	$(CP) $< $@
+
+%.jpg: %.iv
+
+# This is special rile that makes all the figures so they are suitable
+# for inclusion by Lotus Applications
+pcx: $(L0_FIGS_PCX)
+
+clean_figs:
+	$(RM) $(L0_FIGS_PNG) $(L0_FIGS_EPS) $(L0_FIGS_PDF) $(L0_FIGS_PCX)
+
+clean: clean_figs

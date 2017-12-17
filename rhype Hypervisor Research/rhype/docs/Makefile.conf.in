@@ -1,0 +1,138 @@
+#
+# Copyright (C) 2005 Jimi Xenidis <jimix@watson.ibm.com>, IBM Corporation
+#
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 2 of the License, or
+# (at your option) any later version.
+# 
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+# 
+# You should have received a copy of the GNU General Public License
+# along with this program; if not, write to the Free Software
+# Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307 USA
+# $Id$
+
+
+DSSSL_DIR=@dsssl_dir@
+CATALOG=@catalog@
+
+JADE=@jade@ -D$(DSSSL_DIR) $(CATALOG) -D.
+JADETEX=@jadetex@
+PDFJADETEX=@pdfjadetex@
+DOCBOOK2MAN=@docbook2man@
+DVIPS=@dvips@
+
+STYLE_SHEET=$(top_srcdir)/WhitePapers/style.dsl
+JADETEX_CFG=$(top_srcdir)/WhitePapers/jadetex.cfg
+
+# Uncomment if you want html output into several files. 
+#HTML_VARS += -V '(define nochunks #f)'
+
+HTML_ARGS =-t sgml -ihtml $(HTML_VARS) -d $(STYLE_SHEET)\#html
+
+#
+# Frame Maker
+# Our custom stylesheets are broken from rtf
+MIF_ARGS = -t mif -V mif-backend -d print/docbook.dsl
+
+#
+# RTF
+# Our custom stylesheets are broken from rtf
+RTF_ARGS = -t rtf -V rtf-backend -d print/docbook.dsl
+
+# Uncomment if you would like to get double spacing for easy editing of docs
+# default spacing is 1.3
+#TEX_VARS += -V '(define %line-spacing-factor% 2.5)'
+
+TEX_ARGS =-t tex -V tex-backend $(TEX_VARS) -d $(STYLE_SHEET)\#print
+
+COMMON= $(STYLE_SHEET) $(JADETEX_CFG)
+
+DVI_UNDFREF='^LaTeX Warning: There were undefined references.'
+
+TEX.dvi = $(JADETEX) $< >/dev/null 2>&1 || true
+RERUN   = egrep $(DVI_UNDFREF) $(<:%.tex=%.log) >/dev/null 2>&1
+
+%.dvi: %.tex
+	$(TEX.dvi)
+	$(RERUN) && $(TEX.dvi)
+	$(RERUN) && $(TEX.dvi)
+	$(RM) $(<:%.tex=%.log) $(<:%.tex=%.aux) $(<:%.tex=%.out)
+
+# Must figure out the right way to do this.
+# Jadetex emits no useful warnings yet to indicate whether or not a
+# rerun is necessary, so we use brute force
+%.pdf: %.pdf.tex
+	-$(PDFJADETEX) $< > /dev/null 2>&1
+	-$(PDFJADETEX) $< > /dev/null 2>&1
+	-$(PDFJADETEX) $< > /dev/null 2>&1
+	mv $@.pdf $@
+	$(RM) $(<:%.tex=%.log) $(<:%.tex=%.aux) $(<:%.tex=%.out)
+
+%.ps: %.dvi
+	$(DVIPS) -o $@ $< >/dev/null 2>&1
+
+
+
+#
+# Jade rules
+#
+%.html: %.sgml
+	$(JADE) $(HTML_ARGS) $(JADE_PATH) $< > $@ || $(RM) $@
+
+%.mif: %.sgml
+	$(JADE) $(MIF_ARGS) $(JADE_PATH) -o $@ $< || $(RM) $@
+
+%.pdf.tex: %.sgml
+	$(JADE)  -i output.print.pdf $(TEX_ARGS) $(JADE_PATH) -o $@ $<
+
+%.tex: %.sgml
+	$(JADE) -i output.print.eps $(TEX_ARGS) $(JADE_PATH) -o $@ $<
+
+%.rtf: %.sgml
+	$(JADE) -i output.print.eps $(RTF_ARGS) $(JADE_PATH) -o $@ $<
+
+
+TARGETS=$(DOCSRCS:%.sgml=%)
+TARGETS_HTML=$(DOCSRCS:%.sgml=%.html)
+TARGETS_PS=$(DOCSRCS:%.sgml=%.ps)
+TARGETS_PDF=$(DOCSRCS:%.sgml=%.pdf)
+TARGETS_RTF=$(DOCSRCS:%.sgml=%.rtf)
+
+FIGS_PNG = $(FIGS:%=%.png)
+FIGS_PDF = $(FIGS:%=%.pdf)
+FIGS_EPS = $(FIGS:%=%.eps)
+
+FIGS_CLEAN = $(FIGS_PNG) $(FIGS_PDF) $(FIGS_EPS) 
+
+.SECONDARY: $(DOCSRCS:%.sgml=%.tex)
+
+CLEAN_FILES  += $(TARGETS_HTML) \
+		$(TARGETS_PS) \
+		$(TARGETS_PDF) \
+		$(TARGETS_RTF) \
+		$(FIGS_CLEAN)
+
+CLEAN_TEX  = $(DOCSRCS:%.sgml=%.tex) $(DOCSRCS:%.sgml=%.dvi)
+CLEAN_TEX += $(DOCSRCS:%.sgml=%.aux) $(DOCSRCS:%.sgml=%.log)
+CLEAN_TEX += $(DOCSRCS:%.sgml=%.out) $(DOCSRCS:%.sgml=%.fot)
+CLEAN_TEX += $(DOCSRCS:%.sgml=%.pdf.tex)
+
+clean_tex:
+	$(RM) $(CLEAN_TEX)
+
+clean: clean_tex
+	$(RM) $(CLEAN_FILES)
+
+distclean: clean 
+	$(RM) $(DISTCLEAN_FILES)
+
+# One day we will figure out how to auto reconfigure when necessary
+#
+Makefile: $(srcdir)/Makefile.in
+	cd $(top_builddir) \
+	  && $(SHELL) ./config.status

@@ -1,0 +1,715 @@
+dnl
+dnl Copyright (C) 2005 Jimi Xenidis <jimix@watson.ibm.com>, IBM Corporation
+dnl
+dnl This program is free software; you can redistribute it and/or modify
+dnl it under the terms of the GNU General Public License as published by
+dnl the Free Software Foundation; either version 2 of the License, or
+dnl (at your option) any later version.
+dnl 
+dnl This program is distributed in the hope that it will be useful,
+dnl but WITHOUT ANY WARRANTY; without even the implied warranty of
+dnl MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+dnl GNU General Public License for more details.
+dnl 
+dnl You should have received a copy of the GNU General Public License
+dnl along with this program; if not, write to the Free Software
+dnl Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307 USA
+dnl
+dnl $Id$
+dnl
+
+dnl Process this file with autoconf to produce a configure script.
+AC_PREREQ(2.13)		dnl Minimum Autoconf version required.
+AC_INIT(autogen.sh)
+AC_CONFIG_AUX_DIR(scripts)
+AC_CANONICAL_SYSTEM
+
+case "$srcdir" in
+  ${PWD}|.)
+    AC_MSG_ERROR(Sorry: you cannot configure/build in the source directory)
+    ;;
+  *) ;;
+esac
+
+
+AC_CONFIG_HEADER(include/config.h)
+AC_PREFIX_DEFAULT(${PWD}/SDK)
+
+
+dnl Checks for programs.
+AC_PROG_CXX
+AC_PROG_CC
+AC_PROG_MAKE_SET
+AC_PROG_RANLIB
+AC_ARG_PROGRAM
+AC_PROG_INSTALL
+
+dnl What to define
+AC_SUBST(PLATFORM)
+AC_SUBST(MACHINE)
+AC_SUBST(ISA)
+AC_SUBST(CPU_GRP)
+AC_SUBST(CPU_CORE)
+AC_SUBST(CONFIG_OUTPUTS)
+AC_SUBST(OS_IMAGES)
+AC_SUBST(LOADIMAGE)
+AC_SUBST(EXTERNAL_IMAGES)
+AC_SUBST(LIBDIRS)
+AC_SUBST(ALL_COPTFLAGS)
+AC_SUBST(PLUGINDIRS)
+AC_SUBST(USE_OPENFIRMWARE)
+AC_SUBST(HV_USES_RTAS)
+AC_SUBST(ENABLE_GDB)
+AC_SUBST(ENABLE_SIMULATION)
+AC_SUBST(ENABLE_THINWIRE)
+AC_SUBST(LIBBZ2_SRCDIR)
+AC_SUBST(EXTERNAL_CONTROLLER)
+AC_SUBST(VGA_CONSOLE)
+AC_SUBST(THINWIRE)
+AC_SUBST(HOST_BUS_ADAPTER)
+AC_SUBST(EXTERNAL_INTERRUPT_CONTROLLER)
+AC_SUBST(IO_XLATE)
+AC_SUBST(CUSTOM_HW)
+AC_SUBST(RELOADER)
+dnl AC_SUBST(HYP_VERBOSE_CALL)
+
+AC_SUBST(TOP_SUBDIR)
+AC_SUBST(THREADS_PER_CPU)
+AC_SUBST(MAX_CPU)
+AC_SUBST(LOG_CHUNKSIZE)
+
+dnl IO objects
+AC_SUBST(BOOT_ENV)
+AC_SUBST(BOOT_ENVIRONMENT)
+AC_SUBST(BOOT_CONSOLE_DEV)
+AC_SUBST(BOOT_CONSOLE_DEV_ADDR)
+AC_SUBST(IO_CHANNELS)
+#everyone gets this for now, but should be more configurable
+IO_CHANNELS=uartNS16750.o
+
+dnl Build Toolchain
+AC_SUBST(BUILD_TOOLS_PREFIX)
+AC_SUBST(BUILD_ASFLAGS)
+AC_SUBST(BUILD_COPTFLAGS)
+AC_SUBST(BUILD_CFLAGS)
+AC_SUBST(BUILD_CXXFLAGS)
+AC_SUBST(BUILD_CPPDEFS)
+AC_SUBST(BUILD_CPPDIRS)
+AC_SUBST(BUILD_CPPFLAGS)
+AC_SUBST(BUILD_LDFLAGS)
+
+dnl Host Toolchain
+AC_SUBST(HOST_TOOLS_PREFIX)
+AC_SUBST(HOST_GCC_INCLUDE)
+AC_SUBST(HOST_ASFLAGS)
+AC_SUBST(HOST_COPTFLAGS)
+AC_SUBST(HOST_CFLAGS)
+AC_SUBST(HOST_CXXFLAGS)
+AC_SUBST(HOST_CPPDEFS)
+AC_SUBST(HOST_CPPDIRS)
+AC_SUBST(HOST_CPPFLAGS)
+AC_SUBST(HOST_LDFLAGS)
+AC_SUBST(HOST_BFDNAME)
+AC_SUBST(HOST_BFDARCH)
+
+dnl Host Alternate Toolchain
+AC_SUBST(HOST_ALT_TOOLS_PREFIX)
+AC_SUBST(HOST_ALT_TOOLS)
+AC_SUBST(HOST_ALT_BFDNAME)
+HOST_ALT_TOOLS=
+
+dnl Warning Flags
+AC_SUBST(CC_WARN)
+AC_SUBST(CXX_WARN)
+AC_SUBST(AS_WARN)
+AC_SUBST(LD_WARN)
+
+dnl lboot
+AC_SUBST(LBOOT)
+AC_SUBST(LBOOT_VMLINUX)
+AC_SUBST(LBOOT_INITRD)
+
+#
+# For now we disable floating point registers on the host compiler
+#
+HOST_CFLAGS="${HOST_CFLAGS} -msoft-float"
+HOST_CPPDIRS="-I\$(top_srcdir)/include ${HOST_CPPDIRS}"
+
+dnl get platform to compile for
+AC_MSG_CHECKING(for platform)
+AC_ARG_WITH(platform,
+  [  --with-platform=PLATFORM
+			  Form of <arch>-[core]-[machine].
+                          x86: x86 architecture.
+                          ppc64-970-js20:   JS20 pBlades with SLOF FW
+                          ppc64-970-maple:  Maple Boards
+                          ppc64-970-mambo:  Mambo GPUL simulator
+                          ppc64-970-metal:  Bare Metal (no FW)],
+  PLATFORM="$withval")
+
+AC_MSG_RESULT(${PLATFORM})
+
+dnl Check for '--enable-vga'
+AC_MSG_CHECKING([whether to use the VGA driver (x86 only)])
+AC_ARG_ENABLE(vga,
+  [  --enable-vga       Use VGA for initial console output.
+			(default = no).],
+  [enable_vga=$enableval],
+  [enable_vga=no])
+AC_MSG_RESULT($enable_vga)
+
+if test "$enable_vga" = "yes"; then
+  AC_DEFINE(USE_VGA_CONSOLE)
+fi
+
+dnl choose boot environment
+AC_MSG_CHECKING(for environment)
+AC_ARG_WITH(boot-env,
+  [  --with-boot-env=BOOT_ENVIRONMENT
+			  Specify environment.],
+  [boot_env="$withval"],
+  [boot_env="default"])
+AC_MSG_RESULT($boot_env)
+
+dnl choose boot console
+AC_MSG_CHECKING(for boot console device)
+AC_ARG_WITH(boot-console-dev,
+  [  --with-boot-console-dev=DEVICE
+			  Specify boot console device, platform specific.
+			    Examples: OF, VGA, UART-ns16750, etc.],
+  [boot_console_dev="$withval"],
+  [boot_console_dev="default"])
+AC_MSG_RESULT(${boot_console_dev})
+
+AC_MSG_CHECKING(for boot console device address)
+AC_ARG_WITH(boot-console-dev-addr,
+  [  --with-boot-console-dev-addr=DEVICE-ADDRESS
+			  Specify boot console device location,
+			    platform specific.],
+  [boot_console_dev_addr="$withval"],
+  [boot_console_dev_addr="default"])
+AC_MSG_RESULT(${boot_console_dev_addr})
+
+AC_MSG_CHECKING(for boot console device options)
+AC_ARG_WITH(boot-console-dev-opts,
+  [  --with-boot-console-dev-opts=DEVICE-OPTIONS
+			  Specify boot console device options,
+			    platform specific.
+			    Examples: UART baudrate.],
+  [boot_console_dev_opts="$withval"],
+  [boot_console_dev_opts="default"])
+AC_MSG_RESULT(${boot_console_dev_opts})
+
+AC_MSG_CHECKING(for simulator support)
+AC_ARG_WITH(sim,
+  [  --with-sim=<Simulator>,
+                          What simulator support should be targeted.
+                            Usually used for optimizations and debugging.
+                            Ooptions:
+                              platform specific, default or none.],
+  [with_sim="$withval"],
+  [with_sim="default"])
+AC_MSG_RESULT($with_sim)
+
+dnl Check for '--with-default-partition-args'
+AC_MSG_CHECKING(default partition arguments)
+AC_ARG_WITH(default-lpar-args,
+  [  --with-default-lpar-args=<string> ],
+  [  default_lpar_args="$withval" ],
+  [  default_lpar_args="" ])
+AC_DEFINE_UNQUOTED(DEFAULT_LPAR_ARGS, "$default_lpar_args")
+AC_MSG_RESULT($default_lpar_args)
+
+dnl Check for '--with-controller-input'
+AC_MSG_CHECKING(default controller input)
+AC_ARG_WITH(controller-input,
+  [  --with-controller-input=<string> ],
+  [  controller_input="$withval" ],
+  [  controller_input="" ])
+AC_DEFINE_UNQUOTED(CONTROLLER_INPUT,"$controller_input")
+AC_MSG_RESULT($controller_input)
+
+dnl results are expressed below
+AC_ARG_ENABLE(openfw,
+  [  --enable-openfw,        Virtualize OpenFirmware (IEEE 1275-1994).
+                            (default = platform specific)],
+  [enable_openfw=$enableval])
+
+dnl results are expressed below
+AC_ARG_WITH(hba,
+  [  --with-hba=<Host Bus Adapter Type>
+			  These are very platform specific, 
+                            if you are not sure use "default".],
+  [with_hba="$withval"],
+  [with_hba="$with_hba"])
+
+dnl Check for '--with-log-chunksize'
+AC_MSG_CHECKING(log2 of memory chunk size)
+AC_ARG_WITH(log-chunksize,
+  [  --with-log-chunksize=<num>
+                          Size of memory chunk size (default: 26 or 64M)],
+  [log_chunksize="$withval"],
+  [log_chunksize="26"])
+AC_DEFINE_UNQUOTED(LOG_CHUNKSIZE,${log_chunksize})
+AC_MSG_RESULT($log_chunksize)
+
+dnl Default values that may be changed by platform configure fragments
+def_threads_per_cpu=1
+
+HYPE_IN_CONFIG=toplevel
+
+dnl Some defaults
+with_hba=default
+with_eic=default
+
+IO_XLATE=io_xlate.o
+
+case "${host}" in
+  i*86-*)
+    . ${srcdir}/scripts/x86/configure.frag
+  ;;
+  powerpc*)
+    . ${srcdir}/scripts/powerpc/configure.frag
+  ;;
+  *)
+    AC_MSG_ERROR(${host}: Not A Supported --host!)
+    ;;
+esac
+
+AC_MSG_RESULT(${PLATFORM})
+
+AC_MSG_CHECKING(for host bus adapter)
+AC_MSG_RESULT($with_hba)
+HOST_BUS_ADAPTER=hba_${with_hba}.o
+
+AC_MSG_CHECKING(for external interrupt controller)
+AC_ARG_WITH(eic,
+  [  --with-eic=<External Interrupt Controller>
+			  These are very platform specific, 
+                            if you are not sure use "default".],
+  [with_eic="$withval"],
+  [with_eic="$with-eic"])
+AC_MSG_RESULT($with_eic)
+if test -z "$EXTERNAL_INTERRUPT_CONTROLLER"; then
+  EXTERNAL_INTERRUPT_CONTROLLER=eic_${with_eic}.o
+fi
+
+AC_MSG_CHECKING(whether to virtualize OpenFirmware)
+AC_MSG_RESULT($enable_openfw)
+
+if test "$enable_openfw" = "yes"; then
+  PLUGINDIRS="${PLUGINDIRS} openfw"
+  USE_OPENFIRMWARE=yes
+  opt_outputs="${opt_outputs} plugins/openfw/Makefile"
+  opt_outputs="${opt_outputs} ${of_opt_outputs}"
+  AC_DEFINE(USE_OPENFIRMWARE)
+fi
+
+AC_MSG_CHECKING(for BUILD tool prefix string)
+AC_ARG_WITH(build-prefix,
+  [  --with-build-prefix=PREFIX
+			  Specify build toolchain prefix string.],
+  BUILD_TOOLS_PREFIX="$withval")
+if test "x$BUILD_TOOLS_PREFIX" = x; then
+  AC_MSG_RESULT(none)
+else
+  AC_MSG_RESULT($BUILD_TOOLS_PREFIX)
+fi
+
+for tool in ar ranlib gcc objcopy objdump ; do
+  AC_CHECK_PROG(TOOL, "${BUILD_TOOLS_PREFIX}${tool}", yes, no, $PATH)
+  if test "${TOOL}" = no; then
+    AC_MSG_ERROR(${tool}: not found)
+  fi
+done
+
+
+AC_MSG_CHECKING(for HOST tool prefix string)
+AC_ARG_WITH(host-prefix,
+  [  --with-host-prefix=PREFIX
+			  Specify host toolchain prefix string.],
+  HOST_TOOLS_PREFIX="$withval")
+
+AC_MSG_RESULT($HOST_TOOLS_PREFIX)
+
+for tool in ar ranlib gcc objcopy objdump ; do
+  AC_CHECK_PROG(TOOL, "${HOST_TOOLS_PREFIX}${tool}", yes, no, $PATH)
+  if test "${TOOL}" = no; then
+    AC_MSG_ERROR(${tool}: not found)
+  fi
+done
+
+AC_MSG_CHECKING(for HOST ALTERNATE tool prefix string)
+AC_ARG_WITH(host-alt-prefix,
+  [  --with-host-alt-prefix=PREFIX
+			  Specify alternate host toolchain prefix string.
+                            an example is ppc32 for ppc64 host],
+  HOST_ALT_TOOLS_PREFIX="$withval")
+if test "x$HOST_ALT_TOOLS_PREFIX" = x; then
+  AC_MSG_RESULT(none)
+else
+  AC_MSG_RESULT($HOST_ALT_TOOLS_PREFIX)
+
+  for tool in ar ranlib gcc objcopy objdump ; do
+    AC_CHECK_PROG(TOOL, "${HOST_ALT_TOOLS_PREFIX}${tool}", yes, no, $PATH)
+    if test "${TOOL}" = no; then
+      AC_MSG_ERROR(${tool}: not found)
+    fi
+  done
+fi
+
+dnl set the Maximum number of CPUs to support
+AC_MSG_CHECKING(maximum number of CPUs)
+AC_ARG_WITH(max-cpus,
+  [  --with-max-cpus=NUMBER
+			  Specifiy maximum number of CPUs to support.
+                            (default = 1) inifinity to come.],
+  [max_cpus="$withval"],
+  [max_cpus=1])
+AC_DEFINE_UNQUOTED(MAX_CPU,${max_cpus})
+AC_MSG_RESULT($max_cpus)
+
+dnl set the number of (hardware) threads per cpu
+AC_MSG_CHECKING(for number of threads per cpu)
+AC_ARG_WITH(threads-per-cpu,
+  [  --with-threads-per-cpu=NUMBER
+			  Specifiy number of threads per cpu.
+                            (default = 1) may be effected by platform.],
+  [threads_per_cpu="$withval"],
+  [threads_per_cpu="$def_threads_per_cpu"])
+AC_DEFINE_UNQUOTED(THREADS_PER_CPU,${threads_per_cpu})
+AC_MSG_RESULT($threads_per_cpu)
+
+
+dnl get serial baudrate
+AC_MSG_CHECKING(for serial baudrate)
+AC_ARG_WITH(serial_baudrate,
+  [  --with-serial-baudrate=<baudrate>
+			  Baudrate for primary serial device.
+                            (default = 38400)],
+  [serial_baudrate=`echo "$withval" | sed 's/,/ /g'`],
+  [serial_baudrate="38400"])
+
+AC_MSG_RESULT($serial_baudrate)
+AC_DEFINE_UNQUOTED(BAUDRATE, ${serial_baudrate})
+
+dnl Check for '--enable-thinwire'
+THINWIRE=
+AC_MSG_CHECKING(whether to use thinwire)
+AC_ARG_ENABLE(thinwire,
+  [  --enable-thinwire       Use thinwire for console multiplexing.
+                            (default = no)],
+  [enable_thinwire=$enableval],
+  [enable_thinwire=no])
+AC_MSG_RESULT($enable_thinwire)
+
+if test "$enable_thinwire" = "yes"; then
+  ENABLE_THINWIRE="yes";
+  AC_DEFINE(USE_THINWIRE_IO)
+  THINWIRE=thinwire
+  IO_CHANNELS="${IO_CHANNELS} thinwire.o"
+  opt_outputs="${opt_outputs} thinwire/Makefile"
+  if test ! -d "${srcdir}/thinwire/thinwire-src"; then
+    (cd ${srcdir}/thinwire &&
+      cvs -d :pserver:anonymous:@kcvs.watson.ibm.com:/u/kitchawa/cvsroot \
+        co thinwire-src)
+  fi
+else
+  ENABLE_THINWIRE="no";
+fi
+
+dnl get thinwire serial baudrate
+AC_MSG_CHECKING(for thinwire serial baudrate)
+AC_ARG_WITH(thinwire_baudrate,
+  [  --with-thinwire-baudrate=<baudrate>
+			  Thinwire baudrate for primary serial device.],
+  [thinwire_baudrate=`echo "$withval" | sed 's/,/ /g'`],
+  [thinwire_baudrate="default"])
+
+if test "$thinwire_baudrate" != "default" ; then
+	AC_MSG_RESULT($thinwire_baudrate)
+	AC_DEFINE_UNQUOTED(THINWIRE_BAUDRATE, ${thinwire_baudrate})
+fi
+
+dnl Check for '--enable-gdb'
+AC_MSG_CHECKING([whether to use gdb stubs (requires --enable-thinwire)])
+AC_ARG_ENABLE(gdb,
+  [  --enable-gdb	    Include gdb stubs (requires --enable-thinwire).
+                            (default = no)],
+  [if test "$enableval" = "yes" ;
+   then
+   	ENABLE_GDB="yes"; 
+	AC_DEFINE(USE_GDB_STUB)
+   else
+	ENABLE_GDB="no"
+   fi],
+  [ENABLE_GDB="no"])
+AC_MSG_RESULT(${ENABLE_GDB})
+
+dnl Check for '--enable-hypdebug'
+AC_MSG_CHECKING(whether to use hypdebug)
+AC_ARG_ENABLE(hypdebug,
+  [  --enable-hypdebug       Debug hypervisor calls.
+                            (default = no)],
+  [if test "$enableval" = "no"; 
+   then
+	enable_hypdebug=no;
+   else
+	enable_hypdebug=yes;
+	AC_DEFINE(HYP_VERBOSE_CALL)
+   fi
+],
+  [enable_hypdebug=no])
+
+
+AC_MSG_RESULT($enable_hypdebug)
+
+dnl Check for '--with-libbz2-srcdir'
+AC_MSG_CHECKING(whether to use external libbz2)
+AC_ARG_WITH(libbz2-srcdir,
+  [  --with-libbz2-srcdir	libbz2 source to enable compressed images.],
+  [LIBBZ2_SRCDIR="$withval"],
+  [LIBBZ2_SRCDIR="none"]
+)
+
+if test "x$LIBBZ2_SRCDIR" = "xnone"; then
+  AC_MSG_RESULT(none)
+else
+  AC_MSG_RESULT($LIBBZ2_SRCDIR)
+  AC_DEFINE(USE_LIBBZ2)
+fi
+
+dnl --enable-reloader
+AC_MSG_CHECKING(whether to use first controller-image to replace controller)
+AC_ARG_ENABLE(reloader,
+  [  --enable-reloader use first controller-image to replace controller.],
+  [RELOADER=reloader])
+AC_MSG_RESULT($enable_reloader)
+
+if test "$RELOADER" = "reloader"; then
+  AC_DEFINE(RELOADER)
+fi
+
+
+dnl Check for '--enable-external-controller'
+AC_MSG_CHECKING(whether to not link controller into hype image)
+AC_ARG_ENABLE(external-controller,
+  [  --enable-external-controller don't link controller into hype binary.],
+  [EXTERNAL_CONTROLLER="yes"],
+  [EXTERNAL_CONTROLLER="no"])
+AC_MSG_RESULT($EXTERNAL_CONTROLLER)
+
+dnl get the first os image
+AC_MSG_CHECKING(for controlling OS)
+AC_ARG_WITH(controlling-os,
+  [  --with-controlling-os=FILE  OS that gets loaded by hypervisor.],
+  [LOADIMAGE="$withval"],
+  [LOADIMAGE="\$(top_builddir)/test/controller"
+   allow_external_images=yes])
+
+AC_MSG_RESULT($LOADIMAGE)
+
+dnl Default controller can add one external image
+AC_MSG_CHECKING(for external images to add to controllers OS list)
+AC_ARG_WITH(controller-images,
+  [  --with-controller-images=FILE1[,FILE2[...]]
+                          Additional OSes for controller to use.
+			    Only useful to the default controlling OS.],
+  [EXTERNAL_IMAGES=`echo $withval | tr ',' ' '`])
+    
+if test "$allow_external_images" != "yes"; then
+  EXTERNAL_IMAGES=
+fi
+AC_MSG_RESULT($EXTERNAL_IMAGES)
+
+for f in $EXTERNAL_IMAGES; do
+  if test ! -r $f; then
+	AC_MSG_ERROR(External Image Not Found: $f)
+  fi
+done
+
+dnl check for lboot stuff
+AC_MSG_CHECKING(lboot vmlinux location)
+AC_ARG_WITH(lboot-vmlinux,
+  [  --with-lboot-vmlinux=FILE  Location of vmlinux to wrap lboot around.],
+  [LBOOT_VMLINUX="$withval"],
+  [LBOOT_VMLINUX="none"])
+
+AC_MSG_RESULT($LBOOT_VMLINUX)
+
+if test "$LBOOT_VMLINUX" != "none"; then
+  if test ! -r "$LBOOT_VMLINUX"; then
+	AC_MSG_ERROR(lboot vmlinux: $LBOOT_VMLINUX)
+  fi
+
+  AC_MSG_CHECKING(lboot initrd location)
+  AC_ARG_WITH(lboot-initrd,
+  [  --with-lboot-initrd=FILE  Location of initrd lboot package with vmlinux.],
+  [LBOOT_INITRD="$withval"],
+  [LBOOT_INITRD="none"])
+
+  AC_MSG_RESULT($LBOOT_INITRD)
+
+  if test "$LBOOT_INITRD" != "none" -a ! -r "$LBOOT_INITRD"; then
+	AC_MSG_ERROR(lboot initrd: $LBOOT_INITRD)
+  fi
+
+# force lboot at the head
+  EXTERNAL_IMAGES="\$(top_builddir)/lboot/lboot.boot ${EXTERNAL_IMAGES}"
+  LBOOT=lboot	
+  opt_outputs="${opt_outputs} lboot/Makefile"
+	
+fi
+
+dnl Check for '--enable-debug'
+AC_MSG_CHECKING(whether to turn on debugging)
+AC_ARG_ENABLE(debug,
+  [  --enable-debug          Turn on debugging (default = no)],
+  [enable_debug=$enableval],
+  [enable_debug=no])
+AC_MSG_RESULT($enable_debug)
+
+if test $enable_debug = "yes"; then
+  HOST_CPPDEFS="${HOST_CPPDEFS} -DDEBUG"
+fi
+
+dnl Check for '--enable-hwdebug'
+AC_MSG_CHECKING(whether to turn on HW debugging)
+AC_ARG_ENABLE(hwdebug,
+  [  --enable-hwdebug        Print info on every exception (default = no)],
+  [enable_hwdebug=$enableval],
+  [enable_hwdebug=no])
+AC_MSG_RESULT($enable_hwdebug)
+if test $enable_hwdebug = "yes"; then
+  HOST_CPPDEFS="${HOST_CPPDEFS} -DHARDWARE_DEBUG"],
+fi
+
+dnl Check for '--with-copt'
+AC_MSG_CHECKING(C Optimization Flags)
+AC_ARG_WITH(copt,
+  [  --with-copt=CFLAGS
+                          Flags to use to specify optimization.
+			    (default: -g -02).],
+  [ALL_COPTFLAGS="$withval"],
+  [ALL_COPTFLAGS="-g -O2"])
+AC_MSG_RESULT($ALL_COPTFLAGS)
+
+dnl gcc 3.3.[25] barfs on some of the large inlines in the treee
+dnl tell it to not barf unless it's a really large inline
+FINLINE_LIMIT="-finline-limit=1000"
+for T in HOST BUILD; do 
+  lcase=`echo ${T} | tr A-Z a-z`
+  AC_MSG_CHECKING(whether the ${lcase} gcc needs ${FINLINE_LIMIT})
+  tool_prefix=`eval echo \$\{${T}_TOOLS_PREFIX\}`
+  gccver=`${tool_prefix}gcc --version | head -n 1`
+  case "$gccver" in
+    *\ 3.3.2\ *|*\ 3.3.4\ *|*\ 3.3.5\ *)
+      prev_copts=`eval echo \$\{${T}_COPTFLAGS\}`
+      eval ${T}_COPTFLAGS="\"${prev_copts} ${FINLINE_LIMIT}\""
+      AC_MSG_RESULT(yes)
+    ;;
+    *)
+      AC_MSG_RESULT(no)
+    ;;
+  esac
+done
+
+
+AC_MSG_CHECKING(if compiler warnings are allowed)
+AC_ARG_ENABLE(warn,
+  [  --enable-warn           Allow compiler warnings in build. (default = no)
+                            NOT recommended.],
+  [allow_warn=$enableval],
+  [allow_warn=no])
+AC_MSG_RESULT($allow_warn)
+
+COMMON_WARN="-Wall -W"
+COMMON_WARN="${COMMON_WARN} -Waggregate-return"
+COMMON_WARN="${COMMON_WARN} -Wcast-align"
+COMMON_WARN="${COMMON_WARN} -Wcast-qual"
+### bug in gcc <= 3.3.3 char seems to confuse it and warns on literal promotion
+#   COMMON_WARN="${COMMON_WARN} -Wconversion"
+COMMON_WARN="${COMMON_WARN} -Wfloat-equal"
+COMMON_WARN="${COMMON_WARN} -Winline"
+COMMON_WARN="${COMMON_WARN} -Wmissing-declarations"
+#   COMMON_WARN="${COMMON_WARN} -Wmissing-noreturn"
+COMMON_WARN="${COMMON_WARN} -Wnested-externs"
+COMMON_WARN="${COMMON_WARN} -Wpacked"
+
+### bug in gcc <= 3.3.3 where a builtin structure is padded
+#   COMMON_WARN="${COMMON_WARN} -Wpadded"
+COMMON_WARN="${COMMON_WARN} -Wpointer-arith"
+
+### many stdlib interface are implicitly declared by gcc > 3.3.3
+#COMMON_WARN="${COMMON_WARN} -Wredundant-decls"
+
+### bug in gcc <= 3.3.3 where a builtin globals are used. So far we found:
+###  exp and index
+#   COMMON_WARN="${COMMON_WARN} -Wshadow"
+#   COMMON_WARN="${COMMON_WARN} -Wunreachable-code"
+COMMON_WARN="${COMMON_WARN} -Wwrite-strings"
+
+#   CC_WARN="${CC_WARN} -Wbad-function-cast"
+CC_WARN="${CC_WARN} -Wmissing-prototypes "
+CC_WARN="${CC_WARN} -Wnested-externs"
+#   CC_WARN="${CC_WARN} -Wstrict-prototypes"
+
+CC_WARN="${COMMON_WARN} ${CC_WARN}"
+AS_WARN="${CC_WARN}"
+CXX_WARN="-Wall"
+LD_WARN=""
+
+if test $allow_warn = "no"; then
+  CC_WARN="${CC_WARN} -Werror"
+  CXX_WARN="${CXX_WARN} -Werror"
+  AS_WARN="${AS_WARN} -Wa,--fatal-warnings"
+  LD_WARN="${LD_WARN} -Wl,--fatal-warnings"	
+fi
+
+dnl Since we never want to use system header but always want to use
+dnl language headers, we ask gcc where they are.
+AC_MSG_CHECKING(for gcc language headers)
+#
+# stddef.h must be a language header so ask gcc where it is. older gcc
+# will not take a directory
+#
+stddef_path=`${HOST_TOOLS_PREFIX}gcc -print-file-name=include/stddef.h`
+HOST_GCC_INCLUDE=`dirname $stddef_path`
+AC_MSG_RESULT(${HOST_GCC_INCLUDE})
+
+
+# sort and uniquify IO_CHANNELS
+IO_CHANNELS=`echo ${IO_CHANNELS} | tr -s ' ' '\n' | sort -u | tr '\n' ' '`
+AC_MSG_CHECKING(for all supported IO Channels)
+AC_MSG_RESULT(${IO_CHANNELS})
+
+#
+# Last bits of sanity
+#
+if test "$ENABLE_GDB" = "yes" -a ! "$ENABLE_THINWIRE" = "yes"; then
+  AC_MSG_ERROR(Sorry: --enable-gdb needs --enable-thinwire)
+fi
+
+#
+# look for docbook compnents
+#
+AC_CONFIG_SUBDIRS(docs)
+
+config_outputs="
+Makefile
+Makefile.conf
+exttools/Makefile
+tools/Makefile
+tools/linux/Makefile
+hype/Makefile
+test/Makefile
+plugins/Makefile
+lib/Makefile
+${opt_outputs}
+${plat_outputs}
+"
+
+# deal with some weirdness here
+CONFIG_OUTPUTS=`echo ${config_outputs}`
+
+AC_OUTPUT(${config_outputs})

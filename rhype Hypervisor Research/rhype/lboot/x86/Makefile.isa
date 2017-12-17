@@ -1,0 +1,72 @@
+#
+# Copyright (C) 2005 Jimi Xenidis <jimix@watson.ibm.com>, IBM Corporation
+#
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 2 of the License, or
+# (at your option) any later version.
+# 
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+# 
+# You should have received a copy of the GNU General Public License
+# along with this program; if not, write to the Free Software
+# Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307 USA
+#
+# $Id$
+#
+
+
+OBJECTS += head.o lboot.o kernel.o # printf.o
+include $(top_builddir)/Makefile.conf
+
+$(TARGETS): $(top_builddir)/lib/$(ISA)/$(CPU_GRP)/libhype.a
+
+HOST_LDLIBS += -lhype -lgcc
+
+ifneq ($(INITRD),none)
+HOST_CPPFLAGS += -DRAMDISK
+OBJECTS += initrd.o
+endif
+
+HOST_PRE_CPPDIRS += -I$(srcdir)/x86
+
+OBJCOPY = $(HOST_OBJCOPY) --strip-all
+OBJCOPY += -p -O binary -R .note -R .comment -S --gap-fill=0
+
+lboot.bin: lboot.boot
+	$(OBJCOPY) lboot.boot lboot.bin
+
+lboot.boot: lboot.ld $(OBJECTS)
+	$(HOST_LINK.o) -Wl,-T,$<  -o $@ $(OBJECTS) $(HOST_LDLIBS)
+
+kernel.raw: $(VMLINUX)
+	$(OBJCOPY) $< $@
+
+initrd.raw: $(INITRD)
+	cp $< $@
+
+OBJ_IMAGE_FLAGS = \
+	--input-target=binary \
+	--output-target=$(HOST_BFDNAME) \
+	--binary-architecture=$(HOST_BFDARCH)
+
+OBJ_KERNEL_FLAGS = \
+	--redefine-sym=_binary_kernel_raw_start=kernel_start \
+	--redefine-sym=_binary_kernel_raw_size=kernel_size \
+	--redefine-sym=_binary_kernel_raw_end=kernel_end
+
+OBJ_INITRD_FLAGS = \
+	--redefine-sym=_binary_initrd_raw_start=initrd_start \
+	--redefine-sym=_binary_initrd_raw_size=initrd_size \
+	--redefine-sym=_binary_initrd_raw_end=initrd_end
+
+kernel.o: kernel.raw
+	$(HOST_OBJCOPY) $(OBJ_IMAGE_FLAGS) $(OBJ_KERNEL_FLAGS) $< $@
+
+initrd.o: initrd.raw
+	$(HOST_OBJCOPY) $(OBJ_IMAGE_FLAGS) $(OBJ_INITRD_FLAGS) $< $@
+
+CLEAN_FILES += initrd.raw  kernel.raw

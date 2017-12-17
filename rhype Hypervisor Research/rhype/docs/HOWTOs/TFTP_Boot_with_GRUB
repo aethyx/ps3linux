@@ -1,0 +1,115 @@
+tftp'ing with grub
+==================
+
+This file aims to describe how to run the Research Hypervisor on a
+test machine with images obtained from a tftp server running on a
+native x86 box (dev machine).  This is achieved using grub and saves
+the hassle of booting into a usable OS, ftping the files, rebooting
+the machine cycle. If you don't have a dedicated console (kbd/monitor)
+attached to your test machine, read till the end to see how to make
+this work.
+
+Following steps need to be taken - 
+
+  1. Run tftpserver on your dev machine. E.g. on a fedora core 1,
+     change the /etc/xinetd.d/tftp file to say disable=no. Force
+     xinetd to reread the configuration - killall -HUP xinetd.
+
+  2. Build grub with network support. Depending on the network card on
+     the testmachine, configure with appropriate --enable option
+     (check ./configure --help).
+
+  3. Install the above version on grub, and setup it on your MBR. If
+     you built grub on test machine itself, grub-install script can be
+     used (make sure that the new version of grub is being used). If
+     you built it on a dev machine - copy stage1/stage1, stage2/stage2
+     and stage2/<FS SPEC>_stage_1_5 in /boot/grub dir of the test
+     machine.
+
+  4. Reboot the test machine, in the initial grub menu, hit c for
+     command line.
+
+  5. Assuming /dev/hda1 denotes the boot partition, do -
+	grub>root (hd0, 0)
+	grub>setup (hd0)	// For setting up on MBR
+	grub>setup (hd0, 0)  // for setting up on boot partition
+
+  6. reboot.
+	grub>reboot
+
+  7. Again in initial grub menu, hit c for command line. Type help and
+     you should be able to see some networking commands, like
+     ifconfig, dhcp ... If none found, try removing the <FS
+     SPEC>_stage_1_5 file from /boot/grub and go back to step 5 (I
+     have used this trick on bochs, so don't know if it is harmless!).
+
+  8. Configure network via ifconfig. Also if a dhcpserver is
+     available, run dhcp.
+	grub> ifconfig [--address=X.X.X.X --gateway=Y.Y.Y.Y]
+	grub> dhcp
+
+  9. Set up tftpserver.
+	grub>tftpserver <IP OF DEV MACHINE>
+
+ 10. Set up root for grub to use tftp.
+	grub>root (nd)
+
+ 11. Now you should be able to get the kernel via tftp.
+	grub>kernel /rhype.boot
+     This assumes that rhype.boot is in the root dir of the tftpserver.
+
+ 12. Same for the module.
+	grub>module /controller.bin
+
+ 13. Typing boot at grub prompt will boot the Research Hypervisor.
+	grub>boot
+
+Instead of doing command line editing every time, all these commands
+can be put in grub.conf.
+
+If you don't have a dedicated console for your test machine and use
+the serial connection to open a console on the dev machine, some
+tricks are requied since all the editing that needs to be done on grub
+menu can't be done while running thinwire on the dev console.
+
+First to setup grub to use the serial console as the main console for
+displaying grub menu etc., set the following in your menu.lst (aka
+grub.conf) file on test machine.
+
+  serial --unit=0 --speed=9600 --word=8 --parity=no --stop=1 terminal serial
+
+Read Linux-Serial-HOWTO for complete details.
+
+To be able to do all the editing as above, you need to first attach
+minicom to the serial port connecting to your test machine
+(e.g. ttyS0). Then just before the last step (boot), exit minicom
+(ctrl A-Z X), and run the thinwire. Now from a shell send boot the
+following way -
+	$echo 'boot' >> /dev/ttyS0
+and you should see rhype booting on the thinwire console.
+
+
+To do similar tricks on bochs -
+  Steps are pretty much the same, specially copying the stage1 and
+  stage2 files since most probably you don't want to compile grub
+  inside bochs!
+
+To use this setup with bochs:
+----------------------------
+
+  1. Add following to the configuration file (e.g. hv.bochsrc). Make
+     sure /dev/net/tun exists.
+	ne2k: ioaddr=0x240, irq=9, mac=fe:fd:00:00:00:01, ethmod=tuntap, ethdev=tun, script=./tunconfig
+
+  2. Add the following tunconfig script.
+	#!/bin/bash
+	/sbin/ifconfig ${1##/*/} 192.168.1.1
+	
+     Additionally, if connectivity to outside world is desired, add
+     the following lines for masquerading -
+	/sbin/iptables -D POSTROUTING -t nat -s 192.168.1.0/24 -d ! 192.168.1.0/24 -j MASQUERADE >& /dev/null
+	/sbin/iptables -t nat -s 192.168.1.0/24 -d ! 192.168.1.0/24 -A POSTROUTING -j MASQUERADE
+	echo 1 > /proc/sys/net/ipv4/ip_forward
+
+  3. Configure grub as specified in steps above. You should be able to
+     access the tftp server running on your dev machine.

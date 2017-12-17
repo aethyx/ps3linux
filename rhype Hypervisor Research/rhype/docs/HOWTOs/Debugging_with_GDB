@@ -1,0 +1,66 @@
+
+Debugging with GDB
+==================
+
+The Research Hypervisor can allow one to source level debug the
+Hypervisor and any Test OS in the system by using the GNU debugger
+(gdb), this is emabled by configuring your build with
+'--enable-gdb'. This uses and requires a secondary character IO
+channel that is usually provided by the thinwire multiplexor.
+
+This document uses the terms trap, exception, interrupt loosely and
+interchangeably.
+
+Please read the Hints section before asking questions.
+
+Quickstart
+==========
+
+ + Compile Research Hypervisor with gdb support (include
+   '--enable-gdb' when running './configure')
+
+ + Run your newly built Hypervisor, connecting to it with the same
+   serial cable setup you normally use (see other HOWTOs)
+
+ + If/when an exception is raised in hypervisor code, you'll see thinwire
+   stating something such as:
+
+      ./thinwire2: awaiting connection on channel 1 (port 2103).
+
+ + Run gdb on 'hype.boot', connect to above port:
+
+      $ gdb hype
+      GNU gdb 6.1-debian
+      Copyright 2004 Free Software Foundation, Inc.
+      <snip>
+
+      (gdb) target remote localhost:2103
+
+ + In your main thinwire window you should see the connection acknowledged:
+
+      ./thinwire2: accepted connection on channel 1 (port 2103).
+
+   And gdb should tell you where the exception was taken.
+
+
+Hints
+=====
+
+ + Don't issue the "target remote" command in gdb before thinwire
+   proclaims that it is "awaiting". There is currently a problem
+   with gdb and the gdbstub getting synced. Hopefully this will be
+   addressed in the near future.
+
+ + An interrupt must happen before gdb will be started; if needed, add
+   a breakpoint() somewhere in the hypervisor code. Once you've
+   established the connection, you can use gdb to dynamically set further
+   breakpoints.
+
+ + On x86, the EIP register always points to the next instruction;
+   for synchronous exceptions, be aware that gdb will report that
+   the exception happened on the next instruction from where it
+   really was signaled.
+
+ + On x86, only the essential registers are available. Notably MMX,
+   floating point, and SSE are not dealt with. Equivalent PPC registers
+   are also not supported.

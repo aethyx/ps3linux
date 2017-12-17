@@ -1,0 +1,192 @@
+#
+# Copyright (C) 2005 Jimi Xenidis <jimix@watson.ibm.com>, IBM Corporation
+#
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 2 of the License, or
+# (at your option) any later version.
+# 
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+# 
+# You should have received a copy of the GNU General Public License
+# along with this program; if not, write to the Free Software
+# Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307 USA
+#
+# $Id$
+#
+#
+#   make variables set by configure
+#
+
+top_srcdir = @top_srcdir@
+srcdir = @srcdir@
+VPATH = @srcdir@/@ISA@/@CPU_GRP@/@CPU_CORE@:@srcdir@/@ISA@/@CPU_GRP@:@srcdir@/@ISA@:@srcdir@
+top_builddir = ..
+
+LIBS = $($(PLATFORM)_LIBS) -lhype
+
+TARGETS=	bounce		\
+		hxirr		\
+		yield		\
+		busyloop	\
+		ipcmon
+
+TARGETS=yield ipcmon
+
+EXTRA_TARGETS=	hclear_mod	\
+		hclear_ref	\
+		hcppr		\
+		henter_hread	\
+		heoi		\
+		hipi		\
+		hipoll		\
+		hpage_init	\
+		hprotect	\
+		hremove		\
+		hypervisor_data	\
+		multi		\
+		cede0		\
+		cede1		\
+		print		\
+		sched		\
+		termIO
+
+USE_OPENFIRMWARE=@USE_OPENFIRMWARE@
+CUSTOM_HW=@CUSTOM_HW@
+OBJECTS=
+
+all: all_targets
+
+# FIXME we should really download the exception handlers
+# locore MUST be first, crt_init may need to be near by.
+HEAD_OBJECTS = locore.o crt_init.o
+HEAD_OBJECTS += $(ISA_HEAD_OBJECTS)
+HEAD = head.o
+
+# everybody need these, but they don't need to be in head.o
+COMMON_OBJECTS +=  ipc.o hcall_console.o print_nlk.o breakpoint.o
+
+OBJECTS += $(TARGETS:%=%.o) $(COMMON_OBJECTS)
+
+include $(top_builddir)/Makefile.conf
+
+# Have not gotten ISA from Makefile.conf yet
+ifneq (@TOP_SUBDIR@,)
+# yeah, I hate if's but this path is resolvable by accident
+include $(top_srcdir)/@TOP_SUBDIR@/test/Makefile.isa
+endif
+-include $(srcdir)/@ISA@/@CPU_GRP@/Makefile.isa # add to TARGETS and OBJECTS
+
+OBJECTS += $(HEAD) $(HEAD_OBJECTS)
+
+HOST_PRE_CPPDIRS += -I$(srcdir)/$(ISA)/$(CPU_GRP)/$(CPU_CORE)
+HOST_PRE_CPPDIRS += -I$(srcdir)/$(ISA)/$(CPU_GRP)
+HOST_PRE_CPPDIRS += -I$(srcdir)/$(ISA) -I$(srcdir)
+
+ifeq ($(ENABLE_GDB), yes)
+COMMON_OBJECTS += gdbstub.o
+endif
+
+CUR_TOOL=HOST
+
+TEST_CONTROLLER=controller
+
+all_targets: asm_defs.h $(TARGETS) $(TEST_CONTROLLER)
+
+$(HEAD): $(HEAD_OBJECTS)
+	$(HOST_LINK.o) -r $^ -o $@
+
+# all targets depend on 
+$(TARGETS): ../lib/$(ISA)/$(CPU_GRP)/libhype.a
+HOST_LDLIBS += $(HOST_PRE_LDLIBS) -lhype -lgcc
+
+$(TEST_CONTROLLER) $(TARGETS): HOST_LDFLAGS += -Wl,--omagic,-Ttext,$(LTEXT)
+
+# force $(HEAD) to be linked first
+$(TARGETS): % : %.o $(HEAD) $(COMMON_OBJECTS)
+	$(HOST_LINK.o) $(HEAD) $< $(COMMON_OBJECTS) $(HOST_LDLIBS) -o $@
+
+CONTROLLER_OBJECTS +=	pstart.o \
+			loader.o \
+			ofd.o \
+			ofd_platform.o \
+			register.o \
+			vterm.o \
+			llan.o \
+			crq.o \
+			$(CUSTOM_HW) \
+			$(COMMON_OBJECTS)
+
+ifneq ($(LIBBZ2_SRCDIR),none)
+CONTROLLER_OBJECTS += dcomp.o
+$(TEST_CONTROLLER): HOST_LDLIBS+=-L$(top_builddir)/exttools/lib -lbz2
+dcomp.o: HOST_CPPFLAGS+=-I$(top_builddir)/exttools/include
+COMPRESS_OPTION=-z
+endif
+
+OBJECTS += $(CONTROLLER_OBJECTS)
+
+controller-pre.o: controller.o $(HEAD) $(CONTROLLER_OBJECTS)
+	$(HOST_LINK.o) -r $(HEAD) $< $(CONTROLLER_OBJECTS) -o $@
+
+$(TEST_CONTROLLER): controller-pre.o images.o
+	$(HOST_LINK.o) $^ $(HOST_LDLIBS)  -o $@
+
+OBJECTS += controller-pre.o
+
+# yield and create tests require these other objects 
+yield: COMMON_OBJECTS += yield_check.o
+yield: yield_check.o
+
+OBJECTS += yield_check.o
+
+CLEAN_FILES += $(TEST_CONTROLLER) $(COMMON_OBJECTS) $(CONTROLLER_OBJECTS)
+
+XIMGS := @EXTERNAL_IMAGES@
+
+RELOADER= @RELOADER@
+_CONTROLLER_IMAGES := $(XIMGS) $(TARGETS) 
+reloader_CONTROLLER_IMAGES := $(firstword $(XIMGS) $(TARGETS))
+
+CONTROLLER_IMAGES := $($(RELOADER)_CONTROLLER_IMAGES)
+
+IMAGES_MAGIC := $(shell mkdir images > /dev/null 2>&1 || :)
+
+DATAPKG_OPTS = $(COMPRESS_OPTION)
+
+# HOST_BFDNAME and HOST_BFDARCH are always defined
+DATAPKG_OPTS += -O $(HOST_BFDNAME)
+DATAPKG_OPTS += -B $(HOST_BFDARCH)
+
+# HOST_TOOLS_PREFIX might be empty
+ifneq ($(HOST_TOOLS_PREFIX),)
+DATAPKG_OPTS += -p $(HOST_TOOLS_PREFIX)
+endif
+
+images_table.c: datapkg.sh $(CONTROLLER_IMAGES)
+	bash $< -o $@ $(DATAPKG_OPTS) $(CONTROLLER_IMAGES)
+
+# sadly, I cannot figure out an easy way to pick the right img.o's so
+# we use a wild card (and you know how much that hurts me)
+images.o: images_table.o
+	$(HOST_LINK.o) -r $< images/*.img.o -o $@ 
+
+OBJECTS += images.o images_table.o
+
+CLEAN_FILES += $(IMAGES) $(IMAGES:%.img.o=%) images.o images/*
+CLEAN_FILES += $(TARGETS) controller.o images_table.o images_table.c
+CLEAN_FILES += $(HEAD_OBJECTS) $(HEAD) yield_check.o controller-pre.o
+
+INSTALL_DEST = $(DESTDIR)$(datadir)
+INSTALL_IMGS += datapkg.sh controller-pre.o yield
+
+install: $(INSTALL_IMGS)
+	$(mkinstalldirs) $(INSTALL_DEST)
+	@list='$^'; for p in $$list; do \
+	  if test -f $$p; then \
+	     $(INSTALL_DATA) $$p $(INSTALL_DEST)/$$(basename $$p); \
+	  else :; fi; \
+	done
